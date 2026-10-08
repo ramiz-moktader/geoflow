@@ -93,5 +93,4 @@ def search(
         })
     return granules
 
-
 search_data = search

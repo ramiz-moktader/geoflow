@@ -71,7 +71,17 @@ def download(
     out_path.mkdir(parents=True, exist_ok=True)
     check_disk_space(out_path)
 
-    # Extract target URLs
+    # Try seamless earthaccess download first if it's installed
+    try:
+        import earthaccess
+        # Quick heuristic to check if these are earthaccess DataGranules
+        if granules and not isinstance(granules[0], str) and not (isinstance(granules[0], dict) and "raw" in granules[0]):
+            res = earthaccess.download(granules, local_path=str(out_path))
+            return [Path(p) for p in res if p]
+    except (ImportError, Exception):
+        pass
+
+    # Extract target URLs for manual fallback
     urls: List[str] = []
     if isinstance(granules, list):
         for g in granules:
