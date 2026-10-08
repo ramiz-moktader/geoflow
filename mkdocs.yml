@@ -1,0 +1,64 @@
+site_name: GeoFlow
+site_description: Python Framework for Earth Data, GIS, Spatial Statistics & Machine Learning
+site_author: GeoFlow Contributors
+repo_url: https://github.com/your-username/geoflow # Update this with your actual repo
+repo_name: geoflow
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: README.md
+  - User Guide:
+    - Quickstart: user_guide/01_quickstart.md
+    - Images & Collections: user_guide/02_images_and_collections.md
+    - Spatial Statistics: user_guide/03_spatial_statistics.md
+    - Machine Learning & Validation: user_guide/04_machine_learning.md
+    - Cartography & Visualization: user_guide/05_cartography.md
+  - API Reference:
+    - Core: api_reference/core.md
+    - Raster: api_reference/raster.md
+    - Vector: api_reference/vector.md
+    - Spatial Statistics: api_reference/spatial.md
+    - Visualization: api_reference/viz.md
+    - Machine Learning: api_reference/ml_and_validation.md
