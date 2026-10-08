@@ -31,7 +31,7 @@ def search(
     start: Optional[str] = None,
     end: Optional[str] = None,
     limit: int = 50,
-    cloud_cover: Optional[float] = None,
+    cloud_cover: Optional[Union[float, Tuple[float, float]]] = None,
     **kwargs: Any,
 ) -> List[Dict[str, Any]]:
     """
@@ -49,6 +49,10 @@ def search(
         if start or end:
             temporal = (start or "1970-01-01", end or datetime.date.today().isoformat())
             params["temporal"] = temporal
+        if cloud_cover is not None:
+            params["cloud_cover"] = cloud_cover
+            
+        params.update(kwargs)
 
         results = earthaccess.search_data(**params)
         return results

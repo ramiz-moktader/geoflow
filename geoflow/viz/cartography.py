@@ -301,6 +301,8 @@ def plot_carto_map(
     colorbar_label: Optional[str] = None,
     legend: bool = False,
     legend_title: Optional[str] = None,
+    legend_labels: Optional[Dict[str, str]] = None,
+    legend_loc: str = "lower right",
     show_bottom: bool = True,
     show_left: bool = True,
     show_top: bool = False,
@@ -369,6 +371,23 @@ def plot_carto_map(
         gdf = image_or_gdf.gdf if hasattr(image_or_gdf, "gdf") else image_or_gdf
         col = bands[0] if bands and bands[0] in gdf.columns else None
         gdf.plot(column=col, cmap=cmap, ax=ax, legend=legend, alpha=0.9)
+
+    # Custom Discrete Legend
+    if legend_labels:
+        import matplotlib.patches as mpatches
+        legend_handles = []
+        for color, label in legend_labels.items():
+            patch = mpatches.Patch(color=color, label=label)
+            legend_handles.append(patch)
+        ax.legend(
+            handles=legend_handles, 
+            loc=legend_loc, 
+            title=legend_title,
+            fontsize=8, 
+            title_fontsize=9,
+            framealpha=0.9,
+            edgecolor="#e5e7eb"
+        )
 
     # Grid & Graticule lines
     if grid:

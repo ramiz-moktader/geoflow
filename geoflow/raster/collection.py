@@ -299,10 +299,13 @@ class ImageCollection(EarthObject):
         end: Optional[str] = None,
         limit: int = 10,
         bands: Optional[List[str]] = None,
+        cloud_cover: Optional[Tuple[float, float]] = None,
+        **kwargs: Any,
     ) -> ImageCollection:
         """
         GEE-like abstraction that securely searches NASA Earthdata (via earthaccess),
         downloads the raw files (HLS/GEDI), and loads them directly into an ImageCollection.
+        Supports advanced earthaccess kwargs (e.g. cloud_cover=(0, 20)).
         """
         from geoflow.earthdata.search import search_data
         from geoflow.earthdata.downloader import download
@@ -314,6 +317,8 @@ class ImageCollection(EarthObject):
             start=start,
             end=end,
             limit=limit,
+            cloud_cover=cloud_cover,
+            **kwargs
         )
         
         if not results:
