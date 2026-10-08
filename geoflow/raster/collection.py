@@ -290,6 +290,68 @@ class ImageCollection(EarthObject):
             bbox=bbox,
             patch_url=patch_url
         )
+    @classmethod
+    def from_earthdata(
+        cls,
+        dataset: str,
+        region: Optional[Union[Geometry, Any]] = None,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        limit: int = 10,
+        bands: Optional[List[str]] = None,
+    ) -> ImageCollection:
+        """
+        GEE-like abstraction that securely searches NASA Earthdata (via earthaccess),
+        downloads the raw files (HLS/GEDI), and loads them directly into an ImageCollection.
+        """
+        from geoflow.earthdata.search import search_data
+        from geoflow.earthdata.downloader import download
+        
+        # 1. Search
+        results = search_data(
+            dataset=dataset,
+            region=region,
+            start=start,
+            end=end,
+            limit=limit,
+        )
+        
+        if not results:
+            raise ValueError(f"No NASA Earthdata found for {dataset}")
+            
+        # 2. Download
+        downloaded_files = download(results, output_dir="./data")
+        
+        # 3. Group files by granule/date (heuristic based on filename prefix)
+        from collections import defaultdict
+        from pathlib import Path
+        
+        granule_groups = defaultdict(list)
+        for f in downloaded_files:
+            fp = Path(f)
+            # HLS filenames usually start with HLS.L30.T46QCK.2023001T042149...
+            # We group by the first 4 parts of the dot-separated name
+            parts = fp.name.split(".")
+            group_key = ".".join(parts[:4]) if len(parts) >= 4 else fp.stem
+            
+            # Filter to requested bands if specified
+            if bands:
+                if not any(b in fp.name for b in bands):
+                    continue
+            granule_groups[group_key].append(fp)
+            
+        # 4. Load each group into an Image
+        images = []
+        for key, files in granule_groups.items():
+            if not files:
+                continue
+            img = Image.from_files(files)
+            # Try to set date from key (e.g. 2023001T042149)
+            date_str = key.split(".")[-1] if "." in key else key
+            img.set("date", date_str)
+            images.append(img)
+            
+        return cls(images, dataset_name=dataset)
 
 
 RasterCollection = ImageCollection
