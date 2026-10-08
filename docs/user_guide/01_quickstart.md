@@ -33,6 +33,34 @@ median_img = collection.median().clip(aoi)
 # Calculate a Vegetation Index
 ndvi = median_img.ndvi()
 ```
+### Authenticating and Downloading NASA Earthdata
+
+GeoFlow seamlessly integrates with NASA's `earthaccess` to let you securely search and download data right to your environment (like Google Colab):
+
+```python
+import geoflow as gf
+import earthaccess
+import os
+
+# 1. Login to NASA Earthdata (prompts for credentials)
+gf.auth.login(strategy="interactive")
+
+# 2. Search for Sentinel-2 HLS data
+aoi = gf.Rectangle([91.7, 22.2, 92.0, 22.5])
+results = gf.earthdata.search(
+    dataset="SENTINEL-2",
+    region=aoi,
+    start="2023-01-01",
+    end="2023-01-15",
+    limit=2
+)
+
+# 3. Flawless Direct Download
+if len(results) > 0:
+    os.makedirs("./downloads", exist_ok=True)
+    earthaccess.download(results, local_path="./downloads")
+```
+
 
 ### Extensibility
 
