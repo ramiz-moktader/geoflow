@@ -59,17 +59,8 @@ def search_stac(
         
     logger.info(f"Searching STAC Catalog: {url} for {collection}")
     items = client.search(**search_params).item_collection()
-    
-    # Automatically sign items if using Planetary Computer
-    if "planetarycomputer" in url:
-        try:
-            import planetary_computer
-            items = planetary_computer.sign(items)
-        except ImportError:
-            logger.warning("planetary-computer package not installed. Assets may return HTTP 409.")
             
     return items
-
 
 def load_stac_collection(
     items: Any,
@@ -78,6 +69,7 @@ def load_stac_collection(
     bbox: Optional[List[float]] = None,
     crs: str = "EPSG:4326",
     chunks: Dict[str, int] = {"x": 1024, "y": 1024, "time": 1},
+    patch_url: Optional[Any] = None,
 ) -> ImageCollection:
     """
     Lazily loads a STAC ItemCollection into a GeoFlow ImageCollection using odc-stac and dask.
@@ -100,6 +92,8 @@ def load_stac_collection(
         load_params["bbox"] = bbox
     if crs:
         load_params["crs"] = crs
+    if patch_url:
+        load_params["patch_url"] = patch_url
         
     # Lazy load (No data is downloaded yet)
     ds = odc.stac.load(**load_params)

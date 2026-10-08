@@ -275,11 +275,20 @@ class ImageCollection(EarthObject):
             
         bbox = geometry.bounds if geometry and hasattr(geometry, "bounds") else None
         
+        patch_url = None
+        if "planetarycomputer" in catalog:
+            try:
+                import planetary_computer
+                patch_url = planetary_computer.sign_inplace
+            except ImportError:
+                pass
+        
         return load_stac_collection(
             items=items,
             bands=bands,
             resolution=resolution,
             bbox=bbox,
+            patch_url=patch_url
         )
 
 
