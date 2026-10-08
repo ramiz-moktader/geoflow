@@ -35,30 +35,34 @@ ndvi = median_img.ndvi()
 ```
 ### Authenticating and Downloading NASA Earthdata
 
-GeoFlow seamlessly integrates with NASA's `earthaccess` to let you securely search and download data right to your environment (like Google Colab):
+GeoFlow seamlessly integrates with NASA's `earthaccess` to let you securely search and download data right to your environment (like Google Colab), completely abstracted behind a GEE-like API:
 
 ```python
 import geoflow as gf
-import earthaccess
-import os
 
-# 1. Login to NASA Earthdata (prompts for credentials)
+# 1. Login to NASA Earthdata (prompts for credentials in Colab)
 gf.auth.login(strategy="interactive")
-
-# 2. Search for Sentinel-2 HLS data
 aoi = gf.Rectangle([91.7, 22.2, 92.0, 22.5])
-results = gf.earthdata.search(
-    dataset="SENTINEL-2",
-    region=aoi,
-    start="2023-01-01",
+
+# 2. Seamlessly search, download, and load into a GEE-like ImageCollection!
+collection = gf.ImageCollection.from_earthdata(
+    dataset="SENTINEL-2", 
+    region=aoi, 
+    start="2023-01-01", 
     end="2023-01-15",
-    limit=2
+    bands=["B04", "B8A"]
 )
 
-# 3. Flawless Direct Download
-if len(results) > 0:
-    os.makedirs("./downloads", exist_ok=True)
-    earthaccess.download(results, local_path="./downloads")
+# 3. Calculate median composite & NDVI
+ndvi = collection.median().ndvi(nir="B8A", red="B04")
+
+# 4. Generate a publication-ready map (saves directly to disk)
+ndvi.plot_carto_map(
+    cmap="RdYlGn", vmin=-0.2, vmax=0.8,
+    title="Vegetation Index (NDVI) of Chattogram",
+    colorbar_label="NDVI",
+    save_path="./downloads/chattogram_ndvi_map.png"
+)
 ```
 
 
