@@ -384,8 +384,20 @@ class Image(EarthObject):
         return self._clone(result_arr.astype(np.float32), band_names=["expression"])
 
     # -------------------------------------------------------------
-    # Remote Sensing Indices
+    # Remote Sensing Indices (with auto-detection)
     # -------------------------------------------------------------
+    def _find_band(self, options: List[str]) -> str:
+        """Helper to auto-detect band names from common aliases."""
+        for opt in options:
+            if opt in self._band_names:
+                return opt
+        # Fallback to fuzzy match (e.g. "B04" if "B4" requested)
+        for opt in options:
+            for b in self._band_names:
+                if opt.lower() in b.lower() or opt.replace("B", "B0") == b:
+                    return b
+        return options[0] # will raise KeyError downstream if not found
+
     def normalizedDifference(self, bands: List[str]) -> Image:
         """Normalized difference: (band1 - band2) / (band1 + band2)."""
         if len(bands) != 2:
@@ -397,8 +409,10 @@ class Image(EarthObject):
             nd = np.where(denom != 0, (b1 - b2) / denom, np.nan)
         return self._clone(nd[np.newaxis, :, :], band_names=["nd"])
 
-    def ndvi(self, nir: str = "B8", red: str = "B4") -> Image:
-        return self.normalizedDifference([nir, red]).rename(["NDVI"])
+    def ndvi(self, nir: Optional[str] = None, red: Optional[str] = None) -> Image:
+        n = nir or self._find_band(["B8", "B8A", "B08", "NIR"])
+        r = red or self._find_band(["B4", "B04", "RED"])
+        return self.normalizedDifference([n, r]).rename(["NDVI"])
 
     def ndwi(self, green: str = "B3", nir: str = "B8") -> Image:
         return self.normalizedDifference([green, nir]).rename(["NDWI"])
