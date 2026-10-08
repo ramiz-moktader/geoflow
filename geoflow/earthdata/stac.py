@@ -58,7 +58,17 @@ def search_stac(
         search_params["query"] = query
         
     logger.info(f"Searching STAC Catalog: {url} for {collection}")
-    return client.search(**search_params).item_collection()
+    items = client.search(**search_params).item_collection()
+    
+    # Automatically sign items if using Planetary Computer
+    if "planetarycomputer" in url:
+        try:
+            import planetary_computer
+            items = planetary_computer.sign(items)
+        except ImportError:
+            logger.warning("planetary-computer package not installed. Assets may return HTTP 409.")
+            
+    return items
 
 
 def load_stac_collection(
