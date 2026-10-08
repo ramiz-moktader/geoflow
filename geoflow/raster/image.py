@@ -80,6 +80,40 @@ class Image(EarthObject):
         else:
             raise TypeError(f"Unsupported source type for Image: {type(source)}")
 
+    @classmethod
+    def from_files(cls, filepaths: List[Union[str, Path]], band_names: Optional[List[str]] = None) -> Image:
+        """
+        Create a multi-band Image by stacking multiple single-band raster files.
+        If band_names is not provided, it infers names from the filenames (e.g. 'B04' from 'HLS...B04.tif').
+        """
+        import rasterio
+        
+        if not filepaths:
+            raise ValueError("Filepaths list cannot be empty.")
+            
+        # Read the first file to get transform and shape
+        with rasterio.open(filepaths[0]) as src:
+            transform = src.transform
+            crs = src.crs.to_string() if src.crs else "EPSG:4326"
+            nodata = src.nodata
+            height, width = src.shape
+            
+        data = np.zeros((len(filepaths), height, width), dtype=np.float32)
+        inferred_names = []
+        
+        for i, fp in enumerate(filepaths):
+            with rasterio.open(fp) as src:
+                data[i] = src.read(1).astype(np.float32)
+                
+            # Attempt to infer band name from filename
+            name = Path(fp).stem
+            # e.g., HLS.L30.T46QCK.2023001T042149.v2.0.B04
+            parts = name.split(".")
+            inferred_names.append(parts[-1] if len(parts) > 1 else name)
+            
+        b_names = band_names if band_names else inferred_names
+        return cls(data, transform=transform, crs=crs, band_names=b_names, nodata=nodata)
+
     # -------------------------------------------------------------
     # Properties
     # -------------------------------------------------------------
@@ -746,6 +780,16 @@ class Image(EarthObject):
         ax.set_xlabel(f"Longitude ({self._crs.to_string()})")
         ax.set_ylabel(f"Latitude ({self._crs.to_string()})")
         return ax
+
+    def plot_carto_map(self, **kwargs) -> Any:
+        """
+        Render a publication-ready cartographic map complete with North Arrow,
+        Scale Bar, degree-formatted Lat/Long ticks, and Legend.
+        Delegates directly to geoflow.viz.cartography.plot_carto_map.
+        """
+        from geoflow.viz.cartography import plot_carto_map
+        kwargs["image_or_gdf"] = self
+        return plot_carto_map(**kwargs)
 
     def rgb(self, bands: Optional[List[str]] = None) -> Image:
         """Convenience to select RGB bands."""
