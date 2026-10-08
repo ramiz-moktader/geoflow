@@ -2,6 +2,17 @@
 
 > **A Google Earth Engine-like Earth Observation, GIS, Spatial Statistics, and Geospatial ML Framework in Python.**
 
+## Installation
+
+GeoFlow is currently available directly from GitHub. You can install it using `pip`:
+
+```bash
+pip install git+https://github.com/ramiz-moktader/geoflow.git
+```
+
+## Quick Look
+
+
 ```python
 import geoflow as gf
 

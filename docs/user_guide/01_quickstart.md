@@ -5,7 +5,7 @@ Welcome to GeoFlow! This guide will get you up and running with the core concept
 ## Installation
 
 ```bash
-pip install -e .
+pip install git+https://github.com/ramiz-moktader/geoflow.git
 ```
 
 ## First Steps
