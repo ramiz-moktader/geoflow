@@ -244,5 +244,43 @@ class ImageCollection(EarthObject):
     def __repr__(self) -> str:
         return f"<geoflow.ImageCollection '{self.dataset_name}' ({len(self)} images)>"
 
+    @classmethod
+    def from_stac(
+        cls,
+        collection: str,
+        catalog: str = "planetary-computer",
+        geometry: Optional[Union[Geometry, Any]] = None,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        limit: int = 100,
+        bands: Optional[List[str]] = None,
+        resolution: Optional[Union[int, float]] = None,
+    ) -> ImageCollection:
+        """
+        Lazily load an ImageCollection from a STAC catalog (Cloud-Native Streaming).
+        """
+        from geoflow.earthdata.stac import search_stac, load_stac_collection
+        
+        items = search_stac(
+            collection=collection,
+            catalog=catalog,
+            geometry=geometry,
+            start=start,
+            end=end,
+            limit=limit,
+        )
+        
+        if not items:
+            raise ValueError(f"No STAC items found for {collection} in {catalog}")
+            
+        bbox = geometry.bounds if geometry and hasattr(geometry, "bounds") else None
+        
+        return load_stac_collection(
+            items=items,
+            bands=bands,
+            resolution=resolution,
+            bbox=bbox,
+        )
+
 
 RasterCollection = ImageCollection
