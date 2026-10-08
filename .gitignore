@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.vscode/
+.idea/
+
+# MkDocs
+site/
+
+# Test output artifacts
+*.png
+*.jpg
+*.html
+
+# Extraneous files
+gh.zip
+gh_cli/
