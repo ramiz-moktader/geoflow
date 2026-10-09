@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import math
 from pathlib import Path
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import FuncFormatter
@@ -326,7 +327,11 @@ def plot_carto_map(
     configurable label orientation, corner overlap prevention, and Legend/Colorbar.
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=(8, 7), dpi=dpi)
+        try:
+            fig, ax = plt.subplots(figsize=(8, 7), dpi=dpi)
+        except Exception:
+            matplotlib.use("Agg")
+            fig, ax = plt.subplots(figsize=(8, 7), dpi=dpi)
     else:
         fig = ax.figure
 

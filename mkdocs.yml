@@ -1,7 +1,7 @@
 site_name: GeoFlow
 site_description: Python Framework for Earth Data, GIS, Spatial Statistics & Machine Learning
 site_author: GeoFlow Contributors
-repo_url: https://github.com/your-username/geoflow # Update this with your actual repo
+repo_url: https://github.com/ramiz-moktader/geoflow
 repo_name: geoflow
 
 theme:

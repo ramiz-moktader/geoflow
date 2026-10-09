@@ -57,8 +57,8 @@ class PatchDataset:
         for r in range(0, H - P + 1, S):
             for c in range(0, W - P + 1, S):
                 # Calculate geographical bounds of the patch
-                minx, maxy = self.image.transform * (c, r)
-                maxx, miny = self.image.transform * (c + P, r + P)
+                minx, maxy = self.image.transform @ (c, r)
+                maxx, miny = self.image.transform @ (c + P, r + P)
                 geom = shapely.geometry.box(min(minx, maxx), min(miny, maxy), max(minx, maxx), max(miny, maxy))
 
                 # Check if patch is mostly valid data (not all NaN)

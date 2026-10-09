@@ -156,8 +156,8 @@ class Image(EarthObject):
     @property
     def bounds(self) -> Tuple[float, float, float, float]:
         """Returns (minx, miny, maxx, maxy)."""
-        minx, maxy = self._transform * (0, 0)
-        maxx, miny = self._transform * (self.width, self.height)
+        minx, maxy = self._transform @ (0, 0)
+        maxx, miny = self._transform @ (self.width, self.height)
         return (min(minx, maxx), min(miny, maxy), max(minx, maxx), max(miny, maxy))
 
     @property
@@ -560,7 +560,7 @@ class Image(EarthObject):
             return self
         new_width = max(1, int(self.width * scale_factor))
         new_height = max(1, int(self.height * scale_factor))
-        new_transform = self._transform * Affine.scale(1.0 / scale_factor, 1.0 / scale_factor)
+        new_transform = self._transform @ Affine.scale(1.0 / scale_factor, 1.0 / scale_factor)
 
         dst_data = np.full((self.count, new_height, new_width), np.nan, dtype=np.float32)
         resamp = Resampling.bilinear if method == "bilinear" else Resampling.nearest
@@ -936,7 +936,7 @@ class Image(EarthObject):
             dy = float(ys[1] - ys[0]) if len(ys) > 1 else -1.0
             minx = float(xs[0] - dx / 2.0)
             maxy = float(ys[0] - dy / 2.0) if dy < 0 else float(ys[-1] + dy / 2.0)
-            transform = Affine.translation(minx, maxy) * Affine.scale(dx, dy)
+            transform = Affine.translation(minx, maxy) @ Affine.scale(dx, dy)
 
         return cls(arr, transform=transform, crs=crs_str, band_names=band_names, nodata=nodata)
 

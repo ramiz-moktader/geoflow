@@ -170,7 +170,7 @@ class FeatureCollection(EarthObject):
         inv_transform = ~selected_img.transform
 
         for x, y in coords:
-            col, row = inv_transform * (x, y)
+            col, row = inv_transform @ (x, y)
             r, c = int(math.floor(row)), int(math.floor(col))
             for b_idx, b_name in enumerate(target_bands):
                 if 0 <= r < selected_img.height and 0 <= c < selected_img.width:
