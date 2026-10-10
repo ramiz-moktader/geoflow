@@ -124,6 +124,9 @@ class GEDI(EarthObject):
 
                             if self._bounds_filter:
                                 b = self._bounds_filter.bounds
+                                if hasattr(self._bounds_filter, "crs") and str(self._bounds_filter.crs) != "EPSG:4326":
+                                    from geoflow.core.crs import reproject_bounds
+                                    b = reproject_bounds(b, self._bounds_filter.crs, "EPSG:4326")
                                 mask &= (lons >= b[0]) & (lons <= b[2]) & (lats >= b[1]) & (lats <= b[3])
 
                             if not np.any(mask):
@@ -168,7 +171,14 @@ class GEDI(EarthObject):
 
         if not shots:
             # Generate synthetic realistic GEDI footprints within AOI or default extent
-            bounds = self._bounds_filter.bounds if self._bounds_filter else (91.5, 22.0, 92.2, 22.6)
+            bounds = (91.5, 22.0, 92.2, 22.6)
+            if self._bounds_filter:
+                b = self._bounds_filter.bounds
+                if hasattr(self._bounds_filter, "crs") and str(self._bounds_filter.crs) != "EPSG:4326":
+                    from geoflow.core.crs import reproject_bounds
+                    bounds = reproject_bounds(b, self._bounds_filter.crs, "EPSG:4326")
+                else:
+                    bounds = b
             minx, miny, maxx, maxy = bounds
             n_shots = 200
             np.random.seed(42)

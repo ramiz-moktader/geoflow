@@ -41,13 +41,23 @@ def search(
     """
     short_name = DATASET_SHORTNAMES.get(dataset, dataset)
 
+    # Normalize region to WGS84 bounding box (min_lon, min_lat, max_lon, max_lat)
+    wgs84_bounds = None
+    if region:
+        b = region.bounds if hasattr(region, "bounds") else region
+        r_crs = getattr(region, "crs", None)
+        if r_crs and str(r_crs) != "EPSG:4326":
+            from geoflow.core.crs import reproject_bounds
+            wgs84_bounds = reproject_bounds(b, r_crs, "EPSG:4326")
+        else:
+            wgs84_bounds = tuple(b)
+
     # Try earthaccess backend first if installed
     try:
         import earthaccess
         params = {"short_name": short_name, "count": limit}
-        if region:
-            bounds = region.bounds if hasattr(region, "bounds") else region
-            params["bounding_box"] = bounds
+        if wgs84_bounds:
+            params["bounding_box"] = wgs84_bounds
         if start or end:
             temporal = (start or "1970-01-01", end or datetime.date.today().isoformat())
             params["temporal"] = temporal
@@ -68,10 +78,9 @@ def search(
         "page_size": min(limit, 2000),
     }
 
-    if region:
-        b = region.bounds if hasattr(region, "bounds") else region
+    if wgs84_bounds:
         # CMR expects: lower_left_lon,lower_left_lat,upper_right_lon,upper_right_lat
-        params["bounding_box"] = f"{b[0]},{b[1]},{b[2]},{b[3]}"
+        params["bounding_box"] = f"{wgs84_bounds[0]},{wgs84_bounds[1]},{wgs84_bounds[2]},{wgs84_bounds[3]}"
 
     if start or end:
         s_str = f"{start}T00:00:00Z" if start else "1970-01-01T00:00:00Z"

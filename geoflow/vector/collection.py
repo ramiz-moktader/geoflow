@@ -151,19 +151,26 @@ class FeatureCollection(EarthObject):
         Sample raster pixel values at feature geometry locations and add as columns.
         Supports both points (exact sampling) and polygons (centroid / zonal sample).
         """
-        import rasterio.sample
-
-        target_image = image if self.crs == image.crs else image.reproject(self.crs)
-        target_bands = bands or target_image.bands
-        selected_img = target_image.select(target_bands)
+        target_bands = bands or image.bands
+        selected_img = image.select(target_bands)
 
         new_gdf = self._gdf.copy()
 
         # Extract coordinates for sampling
-        coords = []
-        for geom in new_gdf.geometry:
-            pt = geom.centroid if geom.geom_type != "Point" else geom
-            coords.append((pt.x, pt.y))
+        pts = [geom.centroid if geom.geom_type != "Point" else geom for geom in new_gdf.geometry]
+
+        # If CRS differs, reproject sample coordinates to image CRS without reprojecting entire raster
+        if self.crs != image.crs:
+            import pyproj
+            src_str = self.crs.to_string() if hasattr(self.crs, "to_string") else str(self.crs)
+            dst_str = image.crs.to_string() if hasattr(image.crs, "to_string") else str(image.crs)
+            transformer = pyproj.Transformer.from_crs(src_str, dst_str, always_xy=True)
+            xs = [p.x for p in pts]
+            ys = [p.y for p in pts]
+            tx, ty = transformer.transform(xs, ys)
+            coords = list(zip(tx, ty))
+        else:
+            coords = [(p.x, p.y) for p in pts]
 
         # Sample from array using affine inverse transform
         sampled_vals = {b: [] for b in target_bands}
@@ -238,6 +245,35 @@ class FeatureCollection(EarthObject):
 
     def to_geodataframe(self) -> gpd.GeoDataFrame:
         return self._gdf.copy()
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Convert FeatureCollection to a pandas DataFrame."""
+        return pd.DataFrame(self._gdf)
+
+    def to_pandas(self) -> pd.DataFrame:
+        """Alias for to_dataframe()."""
+        return self.to_dataframe()
+
+    def to_csv(self, filepath: Union[str, Path], index: bool = False, **kwargs: Any) -> None:
+        """Export FeatureCollection attributes to CSV file."""
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        df = self._gdf.copy()
+        if "geometry" in df.columns:
+            df["geometry"] = df["geometry"].apply(lambda g: g.wkt if g is not None else None)
+        df.to_csv(filepath, index=index, **kwargs)
+
+    def to_parquet(self, filepath: Union[str, Path], **kwargs: Any) -> None:
+        """Export FeatureCollection to GeoParquet / Parquet file."""
+        filepath = Path(filepath)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            self._gdf.to_parquet(filepath, **kwargs)
+        except Exception:
+            df = self._gdf.copy()
+            if "geometry" in df.columns:
+                df["geometry"] = df["geometry"].apply(lambda g: g.wkt if g is not None else None)
+            df.to_parquet(filepath, **kwargs)
 
     def to_file(self, filepath: Union[str, Path], driver: Optional[str] = None):
         filepath = Path(filepath)

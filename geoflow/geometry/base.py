@@ -27,6 +27,10 @@ class Geometry(EarthObject):
     def crs(self) -> CRS:
         return self._crs
 
+    def __call__(self) -> Geometry:
+        """Allow calling geometry as a method (e.g. img.geometry() or ee.Image.geometry())."""
+        return self
+
     @property
     def shapely(self) -> BaseGeometry:
         return self._geom
@@ -126,6 +130,11 @@ class Geometry(EarthObject):
 
     def _repr_svg_(self) -> str:
         return self._geom._repr_svg_()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Geometry):
+            return False
+        return self._crs == other._crs and bool(self._geom.equals(other._geom))
 
     def __repr__(self) -> str:
         return f"<Geometry {self._geom.geom_type} (CRS: {self._crs})>"
