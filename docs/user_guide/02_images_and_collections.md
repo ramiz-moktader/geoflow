@@ -30,15 +30,22 @@ ndvi_manual = (b8 - b4) / (b8 + b4)
 ndvi = img.ndvi(nir="B8", red="B4")
 ```
 
-### Xarray Integration
-Unlike GEE, you can effortlessly drop into `xarray` for advanced multi-dimensional processing.
+### Xarray & rioxarray Integration
+Unlike GEE, you can effortlessly drop into `xarray` and `rioxarray` for advanced multi-dimensional geospatial processing. Spatial attributes (CRS, transform, resolution, nodata) are written to the `.rio` accessor automatically.
 
 ```python
+# Convert to xarray.DataArray with rioxarray spatial metadata
 da = img.to_xarray()
 # da is an xarray.DataArray with dims ('band', 'y', 'x')
-# ... do custom xarray processing ...
 
-# Convert back to GeoFlow Image
+# Native rioxarray accessor support:
+print(da.rio.crs)       # e.g., EPSG:4326
+print(da.rio.bounds())  # (minx, miny, maxx, maxy)
+
+# Perform rioxarray operations (e.g. reproject, clip)
+# da_utm = da.rio.reproject("EPSG:32646")
+
+# Convert back to a GeoFlow Image
 processed_img = gf.Image.from_xarray(da)
 ```
 

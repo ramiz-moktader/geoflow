@@ -12,6 +12,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import FuncFormatter
+from pyproj import Transformer
 
 from geoflow.core.crs import CRS
 
@@ -159,7 +160,8 @@ def draw_scale_bar(
 def format_degree_ticks(
     ax: plt.Axes,
     bounds: Optional[Tuple[float, float, float, float]] = None,
-    is_geographic: bool = True,
+    crs: Union[str, CRS, None] = "EPSG:4326",
+    is_geographic: Optional[bool] = None,
     show_bottom: bool = True,
     show_left: bool = True,
     show_top: bool = False,
@@ -170,16 +172,26 @@ def format_degree_ticks(
     tick_fontfamily: Optional[str] = None,
     tick_fontweight: str = "normal",
     tick_color: str = "#111827",
-    degree_precision: int = 2,
+    degree_precision: Optional[int] = None,
     prune_corners: Union[bool, str] = True,
     corner_threshold: float = 0.025,
 ):
     """
     Format axes ticks in degree cardinal notation with customizable orientation,
     four-sided display, typography styling, and corner collision pruning.
+    Automatically handles projected CRS (e.g. UTM) by converting coordinates
+    to Lat/Long degrees via pyproj.
     """
+    crs_obj = crs if isinstance(crs, CRS) else (CRS(crs) if crs is not None else CRS("EPSG:4326"))
+    if is_geographic is None:
+        is_geographic = crs_obj.is_geographic
+
+    transformer = None
     if not is_geographic:
-        return
+        try:
+            transformer = Transformer.from_crs(crs_obj.pyproj_crs, "EPSG:4326", always_xy=True)
+        except Exception:
+            transformer = None
 
     if bounds is not None:
         minx, miny, maxx, maxy = bounds
@@ -189,6 +201,30 @@ def format_degree_ticks(
 
     span_x = abs(maxx - minx)
     span_y = abs(maxy - miny)
+    center_x = (minx + maxx) / 2.0
+    center_y = (miny + maxy) / 2.0
+
+    # Auto-adjust precision if degree span is small to prevent duplicate labels
+    if degree_precision is None:
+        deg_span = 1.0
+        if transformer is not None:
+            try:
+                min_lon, min_lat = transformer.transform(minx, miny)
+                max_lon, max_lat = transformer.transform(maxx, maxy)
+                deg_span = max(abs(max_lon - min_lon), abs(max_lat - min_lat))
+            except Exception:
+                deg_span = 1.0
+        elif is_geographic:
+            deg_span = max(span_x, span_y)
+
+        if deg_span < 0.005:
+            prec = 4
+        elif deg_span < 0.05:
+            prec = 3
+        else:
+            prec = 2
+    else:
+        prec = degree_precision
 
     def resolve_rotation(val: Union[str, int, float]) -> float:
         if isinstance(val, (int, float)):
@@ -236,14 +272,34 @@ def format_degree_ticks(
     def fmt_lon(x, pos):
         if prune_corners and prune_str in ("x", "both") and is_x_corner(x):
             return ""
-        direction = "E" if x >= 0 else "W"
-        return f"{abs(x):.{degree_precision}f}° {direction}"
+        if transformer is not None:
+            try:
+                lon_deg, _ = transformer.transform(x, center_y)
+                direction = "E" if lon_deg >= 0 else "W"
+                return f"{abs(lon_deg):.{prec}f}° {direction}"
+            except Exception:
+                return f"{x:,.0f}"
+        elif is_geographic:
+            direction = "E" if x >= 0 else "W"
+            return f"{abs(x):.{prec}f}° {direction}"
+        else:
+            return f"{x:,.0f}"
 
     def fmt_lat(y, pos):
         if prune_corners and prune_str in ("true", "auto", "y", "both") and is_y_corner(y):
             return ""
-        direction = "N" if y >= 0 else "S"
-        return f"{abs(y):.{degree_precision}f}° {direction}"
+        if transformer is not None:
+            try:
+                _, lat_deg = transformer.transform(center_x, y)
+                direction = "N" if lat_deg >= 0 else "S"
+                return f"{abs(lat_deg):.{prec}f}° {direction}"
+            except Exception:
+                return f"{y:,.0f}"
+        elif is_geographic:
+            direction = "N" if y >= 0 else "S"
+            return f"{abs(y):.{prec}f}° {direction}"
+        else:
+            return f"{y:,.0f}"
 
     ax.xaxis.set_major_formatter(FuncFormatter(fmt_lon))
     ax.yaxis.set_major_formatter(FuncFormatter(fmt_lat))
@@ -402,7 +458,7 @@ def plot_carto_map(
     format_degree_ticks(
         ax,
         bounds=bounds,
-        is_geographic=crs.is_geographic,
+        crs=crs,
         show_bottom=show_bottom,
         show_left=show_left,
         show_top=show_top,
@@ -457,10 +513,12 @@ def plot_carto_map(
             color="#4b5563",
         )
 
+    crs_obj = crs if isinstance(crs, CRS) else CRS(crs)
+    is_degrees = crs_obj.is_geographic or (hasattr(crs_obj, "pyproj_crs") and crs_obj.pyproj_crs is not None)
     if show_bottom:
-        ax.set_xlabel("Longitude", fontsize=9, labelpad=8)
+        ax.set_xlabel("Longitude" if is_degrees else "Easting (m)", fontsize=9, labelpad=8)
     if show_left:
-        ax.set_ylabel("Latitude", fontsize=9, labelpad=8)
+        ax.set_ylabel("Latitude" if is_degrees else "Northing (m)", fontsize=9, labelpad=8)
 
     plt.tight_layout()
 
