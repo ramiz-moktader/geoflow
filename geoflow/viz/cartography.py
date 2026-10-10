@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 from pyproj import Transformer
 
 from geoflow.core.crs import CRS
@@ -173,12 +173,14 @@ def format_degree_ticks(
     tick_fontweight: str = "normal",
     tick_color: str = "#111827",
     degree_precision: Optional[int] = None,
+    coord_format: str = "DD",
+    interval: Optional[float] = None,
     prune_corners: Union[bool, str] = True,
     corner_threshold: float = 0.025,
 ):
     """
-    Format axes ticks in degree cardinal notation with customizable orientation,
-    four-sided display, typography styling, and corner collision pruning.
+    Format axes ticks in degree cardinal notation (DD, DM, DMS) with customizable orientation,
+    custom intervals, four-sided display, typography styling, and corner collision pruning.
     Automatically handles projected CRS (e.g. UTM) by converting coordinates
     to Lat/Long degrees via pyproj.
     """
@@ -226,6 +228,20 @@ def format_degree_ticks(
     else:
         prec = degree_precision
 
+    # Apply custom interval if specified (in degrees)
+    if interval is not None and interval > 0:
+        try:
+            if transformer is not None:
+                deg_to_m_x = 111320.0 * math.cos(math.radians(center_y if abs(center_y) <= 90 else 0))
+                deg_to_m_y = 111320.0
+                ax.xaxis.set_major_locator(MultipleLocator(interval * deg_to_m_x))
+                ax.yaxis.set_major_locator(MultipleLocator(interval * deg_to_m_y))
+            else:
+                ax.xaxis.set_major_locator(MultipleLocator(interval))
+                ax.yaxis.set_major_locator(MultipleLocator(interval))
+        except Exception:
+            pass
+
     def resolve_rotation(val: Union[str, int, float]) -> float:
         if isinstance(val, (int, float)):
             return float(val)
@@ -250,10 +266,8 @@ def format_degree_ticks(
             return False
         dist_bottom = abs(y - miny) / span_y
         dist_top = abs(y - maxy) / span_y
-        # Bottom corner overlap: if bottom x-ticks are shown OR vertical lat hangs down
         if dist_bottom <= y_thresh and (show_bottom or rot_y == 90.0):
             return True
-        # Top corner overlap: if top x-ticks are shown OR vertical lat hangs up
         if dist_top <= y_thresh and (show_top or rot_y == 90.0):
             return True
         return False
@@ -269,19 +283,40 @@ def format_degree_ticks(
             return True
         return False
 
+    def format_coord_val(val_deg: float, is_lat: bool) -> str:
+        direction = ("N" if val_deg >= 0 else "S") if is_lat else ("E" if val_deg >= 0 else "W")
+        abs_deg = abs(val_deg)
+        fmt = coord_format.upper()
+        if fmt == "DMS":
+            d = int(abs_deg)
+            m_float = (abs_deg - d) * 60.0
+            m = int(m_float)
+            s = round((m_float - m) * 60.0)
+            if s >= 60:
+                s = 0
+                m += 1
+            if m >= 60:
+                m = 0
+                d += 1
+            return f"{d}° {m:02d}' {s:02d}\" {direction}"
+        elif fmt == "DM":
+            d = int(abs_deg)
+            m_float = (abs_deg - d) * 60.0
+            return f"{d}° {m_float:04.1f}' {direction}"
+        else:  # DD
+            return f"{abs_deg:.{prec}f}° {direction}"
+
     def fmt_lon(x, pos):
         if prune_corners and prune_str in ("x", "both") and is_x_corner(x):
             return ""
         if transformer is not None:
             try:
                 lon_deg, _ = transformer.transform(x, center_y)
-                direction = "E" if lon_deg >= 0 else "W"
-                return f"{abs(lon_deg):.{prec}f}° {direction}"
+                return format_coord_val(lon_deg, is_lat=False)
             except Exception:
                 return f"{x:,.0f}"
         elif is_geographic:
-            direction = "E" if x >= 0 else "W"
-            return f"{abs(x):.{prec}f}° {direction}"
+            return format_coord_val(x, is_lat=False)
         else:
             return f"{x:,.0f}"
 
@@ -291,13 +326,11 @@ def format_degree_ticks(
         if transformer is not None:
             try:
                 _, lat_deg = transformer.transform(center_x, y)
-                direction = "N" if lat_deg >= 0 else "S"
-                return f"{abs(lat_deg):.{prec}f}° {direction}"
+                return format_coord_val(lat_deg, is_lat=True)
             except Exception:
                 return f"{y:,.0f}"
         elif is_geographic:
-            direction = "N" if y >= 0 else "S"
-            return f"{abs(y):.{prec}f}° {direction}"
+            return format_coord_val(y, is_lat=True)
         else:
             return f"{y:,.0f}"
 
@@ -349,7 +382,12 @@ def plot_carto_map(
     title: Optional[str] = None,
     subtitle: Optional[str] = None,
     north_arrow: bool = True,
+    north_loc: str = "top-right",
+    north_size: float = 0.07,
+    north_color: str = "#111827",
     scale_bar: bool = True,
+    scale_loc: str = "bottom-left",
+    scale_fraction: float = 0.25,
     grid: bool = True,
     grid_style: str = ":",
     grid_color: str = "#6b7280",
@@ -370,7 +408,10 @@ def plot_carto_map(
     tick_fontfamily: Optional[str] = None,
     tick_fontweight: str = "normal",
     tick_color: str = "#111827",
-    degree_precision: int = 2,
+    degree_precision: Optional[int] = None,
+    coord_format: str = "DD",
+    graticule_interval: Optional[float] = None,
+    extent: Optional[Tuple[float, float, float, float]] = None,
     prune_corners: Union[bool, str] = True,
     corner_threshold: float = 0.025,
     ax: Optional[plt.Axes] = None,
@@ -391,7 +432,7 @@ def plot_carto_map(
     else:
         fig = ax.figure
 
-    bounds = image_or_gdf.bounds
+    bounds = extent if extent is not None else image_or_gdf.bounds
     crs = image_or_gdf.crs
 
     # Set precise spatial extent on axes
@@ -406,7 +447,7 @@ def plot_carto_map(
             rgb_arr = image_or_gdf.visualize({"bands": target_bands})
             im = ax.imshow(
                 rgb_arr,
-                extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+                extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
                 origin="upper",
             )
         else:
@@ -415,7 +456,7 @@ def plot_carto_map(
             mx = np.nanpercentile(single, 98) if vmax is None else vmax
             im = ax.imshow(
                 single,
-                extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+                extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
                 cmap=cmap,
                 vmin=mn,
                 vmax=mx,
@@ -437,8 +478,12 @@ def plot_carto_map(
     if legend_labels:
         import matplotlib.patches as mpatches
         legend_handles = []
-        for color, label in legend_labels.items():
-            patch = mpatches.Patch(color=color, label=label)
+        for k, v in legend_labels.items():
+            if str(v).startswith("#") or v in ("blue", "green", "red", "yellow", "black", "white", "orange", "purple", "cyan", "magenta"):
+                patch_color, patch_label = v, k
+            else:
+                patch_color, patch_label = k, v
+            patch = mpatches.Patch(color=patch_color, label=patch_label)
             legend_handles.append(patch)
         ax.legend(
             handles=legend_handles, 
@@ -470,15 +515,17 @@ def plot_carto_map(
         tick_fontweight=tick_fontweight,
         tick_color=tick_color,
         degree_precision=degree_precision,
+        coord_format=coord_format,
+        interval=graticule_interval,
         prune_corners=prune_corners,
         corner_threshold=corner_threshold,
     )
 
     if scale_bar:
-        draw_scale_bar(ax, bounds, crs=crs, loc="bottom-left")
+        draw_scale_bar(ax, bounds, crs=crs, loc=scale_loc, max_fraction=scale_fraction)
 
     if north_arrow:
-        draw_north_arrow(ax, loc="top-right")
+        draw_north_arrow(ax, loc=north_loc, size=north_size, color=north_color)
 
     # Titles & Labels with clean layered offsets
     if title and subtitle:
