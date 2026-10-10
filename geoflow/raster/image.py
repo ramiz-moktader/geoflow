@@ -81,6 +81,13 @@ class Image(EarthObject):
             raise TypeError(f"Unsupported source type for Image: {type(source)}")
 
     @classmethod
+    def open(cls, filepath: Union[str, Path], band_names: Optional[List[str]] = None, **kwargs: Any) -> Image:
+        """Open a raster image file (alias for Image(filepath))."""
+        return cls(filepath, band_names=band_names, **kwargs)
+
+    from_file = open
+
+    @classmethod
     def from_files(cls, filepaths: List[Union[str, Path]], band_names: Optional[List[str]] = None) -> Image:
         """
         Create a multi-band Image by stacking multiple single-band raster files.

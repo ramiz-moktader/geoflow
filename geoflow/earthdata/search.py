@@ -16,8 +16,10 @@ from geoflow.core.crs import CRS
 DATASET_SHORTNAMES = {
     "GEDI/L2A": "GEDI02_A",
     "GEDI/L2B": "GEDI02_B",
+    "GEDI/L4A": "GEDI04_A",
     "GEDI02_A": "GEDI02_A",
     "GEDI02_B": "GEDI02_B",
+    "GEDI04_A": "GEDI04_A",
     "SENTINEL-2": "HLSS30",
     "LANDSAT-8": "HLSL30",
     "MODIS": "MOD09GA",
