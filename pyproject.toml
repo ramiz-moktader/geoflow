@@ -33,6 +33,8 @@ dependencies = [
     "scikit-learn>=1.3.0",
     "requests>=2.31.0",
     "click>=8.1.0",
+    "earthaccess>=0.11.0",
+    "h5py>=3.8.0",
 ]
 
 [project.optional-dependencies]
