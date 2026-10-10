@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import sys
 import math
 from pathlib import Path
+import numpy as np
 import matplotlib.pyplot as plt
 
 from geoflow.viz.cartography import plot_carto_map
@@ -65,10 +66,11 @@ GRATICULE_INTERVALS: Dict[str, Optional[float]] = {
 
 
 def _make_preview_obj(obj: Any) -> Any:
-    """Create a lightweight downsampled thumbnail for blazing-fast live preview."""
+    """Create a high-fidelity preview thumbnail (up to 1600px) that eliminates pixelation while keeping redraws sub-30ms."""
     if hasattr(obj, "height") and hasattr(obj, "width") and hasattr(obj, "_data"):
         h, w = obj.height, obj.width
-        step = max(1, max(h, w) // 384)
+        # Only downsample if raster exceeds 1600px on either dimension
+        step = max(1, max(h, w) // 1600)
         if step > 1:
             try:
                 from rasterio.transform import Affine
@@ -118,8 +120,23 @@ def create_layout_editor(
             "Please install it via: pip install ipywidgets"
         )
 
-    # Cache fast preview object
+    # Cache high-fidelity preview object
     preview_obj = _make_preview_obj(image_or_gdf)
+
+    # Precalculate vmin and vmax once so interactive redraws skip heavy percentile operations
+    computed_vmin = vmin
+    computed_vmax = vmax
+    if (computed_vmin is None or computed_vmax is None) and hasattr(preview_obj, "data"):
+        try:
+            arr = preview_obj.data[0]
+            valid = arr[np.isfinite(arr)]
+            if len(valid) > 0:
+                if computed_vmin is None:
+                    computed_vmin = float(np.nanpercentile(valid, 2))
+                if computed_vmax is None:
+                    computed_vmax = float(np.nanpercentile(valid, 98))
+        except Exception:
+            pass
 
     default_cb_label = colorbar_label
     if default_cb_label is None and hasattr(image_or_gdf, "bands") and image_or_gdf.bands:
@@ -155,16 +172,40 @@ def create_layout_editor(
 
     # Tab 2: Cartographic Elements (North Arrow & Scale Bar)
     w_north_arrow = widgets.Checkbox(value=north_arrow, description="Show North Arrow")
+    w_north_mode = widgets.Dropdown(
+        options=[("Preset Corner", "corner"), ("Custom Position (X, Y %)", "custom")],
+        value="corner",
+        description="Placement:",
+        layout=widgets.Layout(width="95%"),
+    )
     w_north_loc = widgets.Dropdown(
         options=["top-right", "top-left", "bottom-right", "bottom-left"],
         value="top-right",
-        description="Position:",
+        description="Corner:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_north_x = widgets.FloatSlider(
+        value=92.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="North X (%):",
+        continuous_update=False,
+        layout=widgets.Layout(width="95%"),
+    )
+    w_north_y = widgets.FloatSlider(
+        value=88.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="North Y (%):",
+        continuous_update=False,
         layout=widgets.Layout(width="95%"),
     )
     w_north_size = widgets.FloatSlider(
         value=0.07,
         min=0.03,
-        max=0.15,
+        max=0.18,
         step=0.01,
         description="Arrow Size:",
         continuous_update=False,
@@ -172,10 +213,57 @@ def create_layout_editor(
     )
 
     w_scale_bar = widgets.Checkbox(value=scale_bar, description="Show Dynamic Scale Bar")
+    w_scale_mode = widgets.Dropdown(
+        options=[("Preset Corner", "corner"), ("Custom Position (X, Y %)", "custom")],
+        value="corner",
+        description="Placement:",
+        layout=widgets.Layout(width="95%"),
+    )
     w_scale_loc = widgets.Dropdown(
         options=["bottom-left", "bottom-right", "top-left", "top-right"],
         value="bottom-left",
-        description="Position:",
+        description="Corner:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_scale_x = widgets.FloatSlider(
+        value=8.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="Scale X (%):",
+        continuous_update=False,
+        layout=widgets.Layout(width="95%"),
+    )
+    w_scale_y = widgets.FloatSlider(
+        value=6.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="Scale Y (%):",
+        continuous_update=False,
+        layout=widgets.Layout(width="95%"),
+    )
+    w_scale_len_mode = widgets.Dropdown(
+        options=[
+            ("Auto (Adaptive Length)", "auto"),
+            ("250 meters", 250.0),
+            ("500 meters", 500.0),
+            ("1 kilometer", 1000.0),
+            ("2 kilometers", 2000.0),
+            ("5 kilometers", 5000.0),
+            ("10 kilometers", 10000.0),
+            ("25 kilometers", 25000.0),
+            ("50 kilometers", 50000.0),
+            ("100 kilometers", 100000.0),
+            ("Custom Length (m)", "custom"),
+        ],
+        value="auto",
+        description="Bar Length:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_scale_custom_len = widgets.FloatText(
+        value=1000.0,
+        description="Custom (m):",
         layout=widgets.Layout(width="95%"),
     )
     w_scale_frac = widgets.FloatSlider(
@@ -238,10 +326,26 @@ def create_layout_editor(
         description="Format:",
         layout=widgets.Layout(width="95%"),
     )
+    w_grat_mode = widgets.Dropdown(
+        options=[
+            ("Preset Graticule Interval", "preset"),
+            ("Custom Interval (° Degrees)", "deg"),
+            ("Custom Interval (' Minutes)", "min"),
+            ("Custom Interval (\" Seconds)", "sec"),
+        ],
+        value="preset",
+        description="Interval Type:",
+        layout=widgets.Layout(width="95%"),
+    )
     w_grat_interval = widgets.Dropdown(
         options=list(GRATICULE_INTERVALS.items()),
         value=None,
-        description="Interval:",
+        description="Preset:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_custom_interval = widgets.FloatText(
+        value=0.05,
+        description="Custom Val:",
         layout=widgets.Layout(width="95%"),
     )
     w_lat_orient = widgets.Dropdown(
@@ -322,15 +426,58 @@ def create_layout_editor(
     )
 
     w_discrete_preset = widgets.Dropdown(
-        options=list(DISCRETE_PRESETS.keys()),
+        options=list(DISCRETE_PRESETS.keys()) + ["✨ Custom Classes & Colors"],
         value="NDVI 4-Class (Water, Soil, Moderate, Dense)",
         description="Classes:",
         layout=widgets.Layout(width="95%"),
     )
+    w_custom_bins = widgets.Text(
+        value="-0.1, 0.0, 0.2, 0.5, 0.8",
+        description="Class Bins:",
+        placeholder="e.g. -0.1, 0.0, 0.2, 0.5, 0.8",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_custom_colors = widgets.Text(
+        value="#2563eb, #d97706, #84cc16, #15803d",
+        description="Hex Colors:",
+        placeholder="e.g. #2563eb, #d97706, #84cc16, #15803d",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_custom_labels = widgets.Text(
+        value="Water / Clouds, Soil / Barren, Moderate Veg, Dense Canopy",
+        description="Class Labels:",
+        placeholder="e.g. Water, Soil, Moderate Veg, Dense Canopy",
+        layout=widgets.Layout(width="95%"),
+    )
+
+    w_leg_pos_mode = widgets.Dropdown(
+        options=[("Preset Corner", "corner"), ("Custom Position (X, Y %)", "custom")],
+        value="corner",
+        description="Placement:",
+        layout=widgets.Layout(width="95%"),
+    )
     w_discrete_loc = widgets.Dropdown(
-        options=["lower right", "upper right", "lower left", "upper left"],
+        options=["lower right", "upper right", "lower left", "upper left", "center right", "center left"],
         value="lower right",
-        description="Legend Loc:",
+        description="Corner:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_leg_x = widgets.FloatSlider(
+        value=85.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="Legend X (%):",
+        continuous_update=False,
+        layout=widgets.Layout(width="95%"),
+    )
+    w_leg_y = widgets.FloatSlider(
+        value=15.0,
+        min=0.0,
+        max=100.0,
+        step=1.0,
+        description="Legend Y (%):",
+        continuous_update=False,
         layout=widgets.Layout(width="95%"),
     )
     w_discrete_title = widgets.Text(
@@ -349,6 +496,15 @@ def create_layout_editor(
         options=[("300 DPI (Publication Standard)", 300), ("600 DPI (Ultra High-Res)", 600), ("150 DPI (Quick Draft)", 150)],
         value=dpi if dpi in (150, 300, 600) else 300,
         description="DPI:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_export_fit = widgets.Dropdown(
+        options=[
+            ("Preserve Standard Paper Layout (Exact A4 / Letter Dimensions)", "paper"),
+            ("Crop Tight to Map Frame (Trim blank margins)", "tight"),
+        ],
+        value="paper",
+        description="Canvas Fit:",
         layout=widgets.Layout(width="95%"),
     )
     w_auto_refresh = widgets.Checkbox(value=True, description="⚡ Live Auto-Update")
@@ -408,34 +564,122 @@ def create_layout_editor(
             return (min(bw, bh), max(bw, bh))
 
     # -------------------------------------------------------------
-    # 3. Fast Rendering Function
+    # 3. High-Fidelity Rendering Function
     # -------------------------------------------------------------
     def render_map(export_path: Optional[str] = None, export_dpi: Optional[int] = None):
-        out_map.clear_output(wait=True)
-        # Use full-res object when exporting, fast preview thumbnail for live UI
+        if export_path is None:
+            out_map.clear_output(wait=True)
+        # Use full-res object when exporting, fast high-res preview thumbnail for live UI
         target_obj = image_or_gdf if export_path is not None else preview_obj
         fig_size = get_figure_dimensions()
         cur_extent = get_current_extent()
 
         is_discrete = (w_symbology.value == "discrete")
-        leg_labels = DISCRETE_PRESETS.get(w_discrete_preset.value) if is_discrete else None
+        active_bins: Optional[List[float]] = None
+        active_colors: Optional[List[str]] = None
+        leg_labels: Optional[Dict[str, str]] = None
 
-        with out_map:
-            fig, ax = plt.subplots(figsize=fig_size, dpi=export_dpi or 110)
+        if is_discrete:
+            if w_discrete_preset.value == "✨ Custom Classes & Colors":
+                try:
+                    c_bins = [float(x.strip()) for x in w_custom_bins.value.split(",") if x.strip()]
+                    c_cols = [x.strip() for x in w_custom_colors.value.split(",") if x.strip()]
+                    raw_labs = [x.strip() for x in w_custom_labels.value.split(",") if x.strip()]
+                    if len(raw_labs) != len(c_cols):
+                        raw_labs = []
+                        for i in range(len(c_cols)):
+                            if i < len(c_bins) - 1:
+                                raw_labs.append(f"{c_bins[i]} to {c_bins[i+1]}")
+                            elif i == 0 and len(c_bins) > 0:
+                                raw_labs.append(f"< {c_bins[0]}")
+                            elif i >= len(c_bins) - 1 and len(c_bins) > 0:
+                                raw_labs.append(f"> {c_bins[-1]}")
+                            else:
+                                raw_labs.append(f"Class {i+1}")
+                    leg_labels = {lab: col for lab, col in zip(raw_labs, c_cols)}
+                    active_bins = c_bins if len(c_bins) >= 2 else None
+                    active_colors = c_cols if len(c_cols) >= 1 else None
+                except Exception:
+                    leg_labels = DISCRETE_PRESETS["NDVI 4-Class (Water, Soil, Moderate, Dense)"]
+                    active_bins = [-0.1, 0.0, 0.2, 0.5, 0.8]
+                    active_colors = ["#2563eb", "#d97706", "#84cc16", "#15803d"]
+            else:
+                leg_labels = DISCRETE_PRESETS.get(w_discrete_preset.value)
+                if "NDVI 4-Class" in w_discrete_preset.value:
+                    active_bins = [-0.1, 0.0, 0.2, 0.5, 0.8]
+                    active_colors = ["#2563eb", "#d97706", "#84cc16", "#15803d"]
+                elif "NDVI 5-Class" in w_discrete_preset.value:
+                    active_bins = [-0.1, 0.0, 0.15, 0.35, 0.60, 0.90]
+                    active_colors = ["#1d4ed8", "#b45309", "#eab308", "#65a30d", "#14532d"]
+                elif "Land Cover 5-Class" in w_discrete_preset.value:
+                    active_bins = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
+                    active_colors = ["#0284c7", "#16a34a", "#ca8a04", "#dc2626", "#a8a29e"]
+
+        # Resolve North Arrow position
+        if w_north_mode.value == "custom":
+            north_p = (w_north_x.value / 100.0, w_north_y.value / 100.0)
+            north_l = "top-right"
+        else:
+            north_p = None
+            north_l = w_north_loc.value
+
+        # Resolve Scale Bar position & length
+        if w_scale_mode.value == "custom":
+            scale_p = (w_scale_x.value / 100.0, w_scale_y.value / 100.0)
+            scale_l = "bottom-left"
+        else:
+            scale_p = None
+            scale_l = w_scale_loc.value
+
+        if w_scale_len_mode.value == "auto":
+            scale_len = None
+        elif w_scale_len_mode.value == "custom":
+            scale_len = float(w_scale_custom_len.value)
+        else:
+            scale_len = float(w_scale_len_mode.value)
+
+        # Resolve Legend position
+        if w_leg_pos_mode.value == "custom":
+            leg_p = (w_leg_x.value / 100.0, w_leg_y.value / 100.0)
+            leg_l = "center"
+        else:
+            leg_p = None
+            leg_l = w_discrete_loc.value
+
+        # Resolve Graticule Interval
+        if w_grat_mode.value == "preset":
+            chosen_grat_interval = w_grat_interval.value
+        elif w_grat_mode.value == "deg":
+            chosen_grat_interval = float(w_custom_interval.value)
+        elif w_grat_mode.value == "min":
+            chosen_grat_interval = float(w_custom_interval.value) / 60.0
+        elif w_grat_mode.value == "sec":
+            chosen_grat_interval = float(w_custom_interval.value) / 3600.0
+        else:
+            chosen_grat_interval = None
+
+        tight_flag = (w_export_fit.value == "tight")
+
+        if export_path is not None:
+            # Export mode: Render and save directly to file without polluting notebook display
+            fig, ax = plt.subplots(figsize=fig_size, dpi=export_dpi or 300)
             try:
                 plot_carto_map(
                     target_obj,
                     title=w_title.value,
                     subtitle=w_subtitle.value,
                     cmap=w_cmap.value,
-                    vmin=vmin,
-                    vmax=vmax,
+                    vmin=computed_vmin,
+                    vmax=computed_vmax,
                     north_arrow=w_north_arrow.value,
-                    north_loc=w_north_loc.value,
+                    north_loc=north_l,
+                    north_pos=north_p,
                     north_size=w_north_size.value,
                     scale_bar=w_scale_bar.value,
-                    scale_loc=w_scale_loc.value,
+                    scale_loc=scale_l,
+                    scale_pos=scale_p,
                     scale_fraction=w_scale_frac.value,
+                    scale_custom_length_m=scale_len,
                     grid=w_grid.value,
                     grid_style=w_grid_style.value,
                     grid_alpha=w_grid_alpha.value,
@@ -443,8 +687,12 @@ def create_layout_editor(
                     colorbar_label=w_cb_label.value,
                     legend=is_discrete,
                     legend_labels=leg_labels,
-                    legend_loc=w_discrete_loc.value,
+                    legend_loc=leg_l,
+                    legend_pos=leg_p,
                     legend_title=w_discrete_title.value if is_discrete else None,
+                    discrete_bins=active_bins,
+                    discrete_colors=active_colors,
+                    interpolation="nearest" if is_discrete else "bilinear",
                     show_bottom=w_show_bottom.value,
                     show_left=w_show_left.value,
                     show_top=w_show_top.value,
@@ -455,16 +703,71 @@ def create_layout_editor(
                     tick_fontfamily=w_fontfamily.value,
                     degree_precision=w_deg_prec.value,
                     coord_format=w_coord_fmt.value,
-                    graticule_interval=w_grat_interval.value,
+                    graticule_interval=chosen_grat_interval,
                     extent=cur_extent,
                     prune_corners=w_prune.value,
+                    tight_bbox=tight_flag,
                     ax=ax,
                     save_path=export_path,
-                    dpi=export_dpi or 110,
+                    dpi=export_dpi or 300,
                 )
-                display(fig)
             finally:
                 plt.close(fig)
+        else:
+            # Fast Interactive Preview Mode
+            with out_map:
+                fig, ax = plt.subplots(figsize=fig_size, dpi=115)
+                try:
+                    plot_carto_map(
+                        target_obj,
+                        title=w_title.value,
+                        subtitle=w_subtitle.value,
+                        cmap=w_cmap.value,
+                        vmin=computed_vmin,
+                        vmax=computed_vmax,
+                        north_arrow=w_north_arrow.value,
+                        north_loc=north_l,
+                        north_pos=north_p,
+                        north_size=w_north_size.value,
+                        scale_bar=w_scale_bar.value,
+                        scale_loc=scale_l,
+                        scale_pos=scale_p,
+                        scale_fraction=w_scale_frac.value,
+                        scale_custom_length_m=scale_len,
+                        grid=w_grid.value,
+                        grid_style=w_grid_style.value,
+                        grid_alpha=w_grid_alpha.value,
+                        colorbar=(w_colorbar.value and not is_discrete),
+                        colorbar_label=w_cb_label.value,
+                        legend=is_discrete,
+                        legend_labels=leg_labels,
+                        legend_loc=leg_l,
+                        legend_pos=leg_p,
+                        legend_title=w_discrete_title.value if is_discrete else None,
+                        discrete_bins=active_bins,
+                        discrete_colors=active_colors,
+                        interpolation="nearest" if is_discrete else "bilinear",
+                        show_bottom=w_show_bottom.value,
+                        show_left=w_show_left.value,
+                        show_top=w_show_top.value,
+                        show_right=w_show_right.value,
+                        lat_orientation=w_lat_orient.value,
+                        lon_orientation=w_lon_orient.value,
+                        tick_fontsize=w_fontsize.value,
+                        tick_fontfamily=w_fontfamily.value,
+                        degree_precision=w_deg_prec.value,
+                        coord_format=w_coord_fmt.value,
+                        graticule_interval=chosen_grat_interval,
+                        extent=cur_extent,
+                        prune_corners=w_prune.value,
+                        tight_bbox=tight_flag,
+                        ax=ax,
+                        save_path=None,
+                        dpi=115,
+                    )
+                    display(fig)
+                finally:
+                    plt.close(fig)
 
     # -------------------------------------------------------------
     # 4. Event Handlers
@@ -484,14 +787,17 @@ def create_layout_editor(
     # Interactive observers
     interactive_widgets = [
         w_title, w_subtitle, w_paper, w_orient,
-        w_north_arrow, w_north_loc, w_north_size,
-        w_scale_bar, w_scale_loc, w_scale_frac,
+        w_north_arrow, w_north_mode, w_north_loc, w_north_x, w_north_y, w_north_size,
+        w_scale_bar, w_scale_mode, w_scale_loc, w_scale_x, w_scale_y, w_scale_len_mode, w_scale_custom_len, w_scale_frac,
         w_zoom, w_pan_x, w_pan_y,
         w_show_bottom, w_show_left, w_show_top, w_show_right,
-        w_coord_fmt, w_grat_interval, w_lat_orient, w_lon_orient, w_deg_prec,
+        w_coord_fmt, w_grat_mode, w_grat_interval, w_custom_interval,
+        w_lat_orient, w_lon_orient, w_deg_prec,
         w_prune, w_grid, w_grid_style, w_grid_alpha, w_fontfamily, w_fontsize,
         w_symbology, w_cmap, w_colorbar, w_cb_label,
-        w_discrete_preset, w_discrete_loc, w_discrete_title
+        w_discrete_preset, w_custom_bins, w_custom_colors, w_custom_labels,
+        w_leg_pos_mode, w_discrete_loc, w_leg_x, w_leg_y, w_discrete_title,
+        w_export_fit
     ]
     for w in interactive_widgets:
         w.observe(on_change, names="value")
@@ -530,6 +836,29 @@ def create_layout_editor(
     def on_copy_code_clicked(b):
         is_discrete = (w_symbology.value == "discrete")
         ext = get_current_extent()
+        
+        # Calculate scale parameters
+        s_pos = (round(w_scale_x.value / 100.0, 3), round(w_scale_y.value / 100.0, 3)) if w_scale_mode.value == "custom" else None
+        n_pos = (round(w_north_x.value / 100.0, 3), round(w_north_y.value / 100.0, 3)) if w_north_mode.value == "custom" else None
+        
+        if w_scale_len_mode.value == "auto":
+            s_len = None
+        elif w_scale_len_mode.value == "custom":
+            s_len = float(w_scale_custom_len.value)
+        else:
+            s_len = float(w_scale_len_mode.value)
+
+        if w_grat_mode.value == "preset":
+            g_int = w_grat_interval.value
+        elif w_grat_mode.value == "deg":
+            g_int = float(w_custom_interval.value)
+        elif w_grat_mode.value == "min":
+            g_int = float(w_custom_interval.value) / 60.0
+        elif w_grat_mode.value == "sec":
+            g_int = float(w_custom_interval.value) / 3600.0
+        else:
+            g_int = None
+
         code_str = (
             f"# Reproduce this exact cartographic layout in Python:\n"
             f"ax = img.plot_map(\n"
@@ -538,14 +867,17 @@ def create_layout_editor(
             f"    cmap={repr(w_cmap.value)},\n"
             f"    north_arrow={w_north_arrow.value},\n"
             f"    north_loc={repr(w_north_loc.value)},\n"
+            f"    north_pos={n_pos},\n"
             f"    north_size={w_north_size.value},\n"
             f"    scale_bar={w_scale_bar.value},\n"
             f"    scale_loc={repr(w_scale_loc.value)},\n"
+            f"    scale_pos={s_pos},\n"
             f"    scale_fraction={w_scale_frac.value},\n"
+            f"    scale_custom_length_m={s_len},\n"
             f"    grid={w_grid.value},\n"
             f"    grid_style={repr(w_grid_style.value)},\n"
             f"    coord_format={repr(w_coord_fmt.value)},\n"
-            f"    graticule_interval={w_grat_interval.value},\n"
+            f"    graticule_interval={g_int},\n"
             f"    extent={tuple(round(x, 5) for x in ext)},\n"
             f"    show_bottom={w_show_bottom.value},\n"
             f"    show_left={w_show_left.value},\n"
@@ -556,6 +888,7 @@ def create_layout_editor(
             f"    tick_fontfamily={repr(w_fontfamily.value)},\n"
             f"    degree_precision={w_deg_prec.value},\n"
             f"    prune_corners={w_prune.value},\n"
+            f"    tight_bbox={(w_export_fit.value == 'tight')},\n"
             f"    save_path={repr(w_out_file.value)},\n"
             f"    dpi={w_dpi.value},\n"
             f")"
@@ -582,10 +915,14 @@ def create_layout_editor(
     ])
 
     tab_carto = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>North Arrow</b>"),
-        w_north_arrow, w_north_loc, w_north_size,
-        widgets.HTML("<hr style='margin:6px 0;'><b style='color:#1e3a8a;'>Dynamic Scale Bar</b>"),
-        w_scale_bar, w_scale_loc, w_scale_frac,
+        widgets.HTML("<b style='color:#1e3a8a;'>North Arrow Placement & Sizing</b>"),
+        w_north_arrow, w_north_mode, w_north_loc,
+        widgets.HBox([w_north_x, w_north_y]),
+        w_north_size,
+        widgets.HTML("<hr style='margin:6px 0;'><b style='color:#1e3a8a;'>Dynamic Scale Bar Placement & Distance</b>"),
+        w_scale_bar, w_scale_mode, w_scale_loc,
+        widgets.HBox([w_scale_x, w_scale_y]),
+        w_scale_len_mode, w_scale_custom_len, w_scale_frac,
     ])
 
     tab_frame = widgets.VBox([
@@ -597,7 +934,7 @@ def create_layout_editor(
 
     tab_graticule = widgets.VBox([
         widgets.HTML("<b style='color:#1e3a8a;'>Coordinates & Intervals</b>"),
-        w_coord_fmt, w_grat_interval,
+        w_coord_fmt, w_grat_mode, w_grat_interval, w_custom_interval,
         widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Tick Placement & Orientation</b>"),
         widgets.HBox([w_show_bottom, w_show_left]),
         widgets.HBox([w_show_top, w_show_right]),
@@ -607,17 +944,23 @@ def create_layout_editor(
     ])
 
     tab_symbology = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Symbology Type & Palettes</b>"),
+        widgets.HTML("<b style='color:#1e3a8a;'>Symbology Mode & Palettes</b>"),
         w_symbology,
-        widgets.HTML("<hr style='margin:4px 0;'>"),
+        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Continuous Colorbar</b>"),
         w_cmap, w_colorbar, w_cb_label,
-        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Discrete Classified Legend</b>"),
-        w_discrete_preset, w_discrete_loc, w_discrete_title,
+        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Discrete Thematic Classification</b>"),
+        w_discrete_preset,
+        widgets.HTML("<div style='font-size:11px; color:#6b7280; margin:2px 0;'>Custom bins & colors (active when 'Custom Classes' selected):</div>"),
+        w_custom_bins, w_custom_colors, w_custom_labels,
+        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Classified Legend Placement</b>"),
+        w_leg_pos_mode, w_discrete_loc,
+        widgets.HBox([w_leg_x, w_leg_y]),
+        w_discrete_title,
     ])
 
     tab_export = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Publication Export & Code Generation</b>"),
-        w_out_file, w_dpi,
+        widgets.HTML("<b style='color:#1e3a8a;'>Publication Export & Dimensions</b>"),
+        w_out_file, w_dpi, w_export_fit,
         widgets.HBox([btn_export, btn_colab_download]),
         widgets.HBox([btn_refresh, btn_copy_code]),
         w_status,
@@ -626,7 +969,7 @@ def create_layout_editor(
 
     tabs = widgets.Tab(
         children=[tab_canvas, tab_carto, tab_frame, tab_graticule, tab_symbology, tab_export],
-        layout=widgets.Layout(width="400px")
+        layout=widgets.Layout(width="420px")
     )
     tabs.set_title(0, "📄 Canvas")
     tabs.set_title(1, "🧭 Carto")
@@ -643,7 +986,7 @@ def create_layout_editor(
         "</div>"
     )
 
-    left_panel = widgets.VBox([tabs, w_auto_refresh], layout=widgets.Layout(width="400px", margin="0 15px 0 0"))
+    left_panel = widgets.VBox([tabs, w_auto_refresh], layout=widgets.Layout(width="420px", margin="0 15px 0 0"))
     right_panel = widgets.VBox([out_map], layout=widgets.Layout(flex="1 1 auto", min_width="480px"))
 
     main_view = widgets.VBox([

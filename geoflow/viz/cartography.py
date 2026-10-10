@@ -20,6 +20,7 @@ from geoflow.core.crs import CRS
 def draw_north_arrow(
     ax: plt.Axes,
     loc: str = "top-right",
+    pos: Optional[Tuple[float, float]] = None,
     size: float = 0.07,
     color: str = "#111827",
     text_color: str = "#111827",
@@ -27,15 +28,19 @@ def draw_north_arrow(
     """
     Draw a professional 3D-styled cartographic North Arrow on Matplotlib Axes.
     loc: 'top-right', 'top-left', 'bottom-right', 'bottom-left'
+    pos: Optional (x, y) coordinates in axes fraction (0.0 to 1.0) for arbitrary placement.
     size: fraction of axes height
     """
-    loc_positions = {
-        "top-right": (0.92, 0.90),
-        "top-left": (0.08, 0.90),
-        "bottom-right": (0.92, 0.15),
-        "bottom-left": (0.08, 0.15),
-    }
-    cx, cy = loc_positions.get(loc, (0.92, 0.90))
+    if pos is not None:
+        cx, cy = pos
+    else:
+        loc_positions = {
+            "top-right": (0.92, 0.88),
+            "top-left": (0.08, 0.88),
+            "bottom-right": (0.92, 0.15),
+            "bottom-left": (0.08, 0.15),
+        }
+        cx, cy = loc_positions.get(loc, (0.92, 0.88))
 
     # Width and height in axes fraction
     w = size * 0.35
@@ -84,11 +89,14 @@ def draw_scale_bar(
     bounds: Tuple[float, float, float, float],
     crs: Union[str, CRS] = "EPSG:4326",
     loc: str = "bottom-left",
+    pos: Optional[Tuple[float, float]] = None,
     max_fraction: float = 0.25,
+    custom_length_m: Optional[float] = None,
 ):
     """
     Draw an accurate segmented scale bar in km or meters dynamically calculated
     based on the map extent and latitude curvature.
+    Supports preset corners or freeform (x, y) axes coordinates.
     """
     minx, miny, maxx, maxy = bounds
     crs_obj = crs if isinstance(crs, CRS) else CRS(crs)
@@ -97,37 +105,49 @@ def draw_scale_bar(
     center_lat = (miny + maxy) / 2.0
     if crs_obj.is_geographic:
         # 1 deg lon at lat = 111320 * cos(lat)
-        deg_to_m = 111320.0 * math.cos(math.radians(center_lat))
+        deg_to_m = 111320.0 * math.cos(math.radians(center_lat if abs(center_lat) <= 90 else 0))
         total_width_m = (maxx - minx) * deg_to_m
     else:
         total_width_m = (maxx - minx)  # Already in meters
         deg_to_m = 1.0
 
-    target_bar_m = total_width_m * max_fraction
+    if custom_length_m is not None and custom_length_m > 0:
+        chosen_m = custom_length_m
+    else:
+        target_bar_m = total_width_m * max_fraction
+        candidates_m = [
+            10, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 15000,
+            20000, 25000, 50000, 100000, 200000, 500000, 1000000
+        ]
+        chosen_m = min(candidates_m, key=lambda c: abs(c - target_bar_m))
 
-    # Candidate clean rounded scale lengths in meters
-    candidates_m = [
-        100, 250, 500, 1000, 2000, 5000, 10000, 20000, 25000,
-        50000, 100000, 200000, 500000, 1000000
-    ]
-    # Pick candidate closest to target
-    chosen_m = min(candidates_m, key=lambda c: abs(c - target_bar_m))
     bar_width_deg = chosen_m / deg_to_m
 
     # Label text
     if chosen_m >= 1000:
-        label = f"{int(chosen_m / 1000)} km"
+        km_val = chosen_m / 1000.0
+        label = f"{km_val:g} km"
     else:
         label = f"{int(chosen_m)} m"
 
-    # Placement in data coordinates
-    loc_x = {
-        "bottom-left": minx + (maxx - minx) * 0.06,
-        "bottom-right": maxx - (maxx - minx) * 0.06 - bar_width_deg,
-    }.get(loc, minx + (maxx - minx) * 0.06)
+    bar_h = (maxy - miny) * 0.016
 
-    bar_h = (maxy - miny) * 0.015
-    loc_y = miny + (maxy - miny) * 0.06
+    # Placement
+    if pos is not None:
+        fx, fy = pos
+        loc_x = minx + fx * (maxx - minx)
+        loc_y = miny + fy * (maxy - miny)
+    else:
+        loc_lower = loc.lower()
+        if "top" in loc_lower:
+            loc_y = maxy - (maxy - miny) * 0.08
+        else:
+            loc_y = miny + (maxy - miny) * 0.06
+
+        if "right" in loc_lower:
+            loc_x = maxx - (maxx - minx) * 0.06 - bar_width_deg
+        else:
+            loc_x = minx + (maxx - minx) * 0.06
 
     # Draw two-toned segmented bar (left black, right white)
     half_w = bar_width_deg / 2.0
@@ -153,8 +173,8 @@ def draw_scale_bar(
 
     # Tick labels: "0", label
     text_y = loc_y + bar_h * 1.5
-    ax.text(loc_x, text_y, "0", ha="center", va="bottom", fontsize=8, color="#111827", zorder=101)
-    ax.text(loc_x + bar_width_deg, text_y, label, ha="center", va="bottom", fontsize=8, color="#111827", zorder=101)
+    ax.text(loc_x, text_y, "0", ha="center", va="bottom", fontsize=8, fontweight="bold", color="#111827", zorder=101)
+    ax.text(loc_x + bar_width_deg, text_y, label, ha="center", va="bottom", fontsize=8, fontweight="bold", color="#111827", zorder=101)
 
 
 def format_degree_ticks(
@@ -383,11 +403,14 @@ def plot_carto_map(
     subtitle: Optional[str] = None,
     north_arrow: bool = True,
     north_loc: str = "top-right",
+    north_pos: Optional[Tuple[float, float]] = None,
     north_size: float = 0.07,
     north_color: str = "#111827",
     scale_bar: bool = True,
     scale_loc: str = "bottom-left",
+    scale_pos: Optional[Tuple[float, float]] = None,
     scale_fraction: float = 0.25,
+    scale_custom_length_m: Optional[float] = None,
     grid: bool = True,
     grid_style: str = ":",
     grid_color: str = "#6b7280",
@@ -398,6 +421,10 @@ def plot_carto_map(
     legend_title: Optional[str] = None,
     legend_labels: Optional[Dict[str, str]] = None,
     legend_loc: str = "lower right",
+    legend_pos: Optional[Tuple[float, float]] = None,
+    discrete_bins: Optional[List[float]] = None,
+    discrete_colors: Optional[List[str]] = None,
+    interpolation: str = "bilinear",
     show_bottom: bool = True,
     show_left: bool = True,
     show_top: bool = False,
@@ -414,6 +441,7 @@ def plot_carto_map(
     extent: Optional[Tuple[float, float, float, float]] = None,
     prune_corners: Union[bool, str] = True,
     corner_threshold: float = 0.025,
+    tight_bbox: bool = True,
     ax: Optional[plt.Axes] = None,
     save_path: Optional[Union[str, Path]] = None,
     dpi: int = 300,
@@ -449,20 +477,40 @@ def plot_carto_map(
                 rgb_arr,
                 extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
                 origin="upper",
+                interpolation=interpolation,
             )
         else:
             single = image_or_gdf.select(target_bands[0]).data[0]
-            mn = np.nanpercentile(single, 2) if vmin is None else vmin
-            mx = np.nanpercentile(single, 98) if vmax is None else vmax
-            im = ax.imshow(
-                single,
-                extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
-                cmap=cmap,
-                vmin=mn,
-                vmax=mx,
-                origin="upper",
-            )
-            if colorbar:
+            if discrete_bins is not None and discrete_colors is not None and len(discrete_bins) >= 2:
+                from matplotlib.colors import BoundaryNorm, ListedColormap
+                n_cols = len(discrete_colors)
+                # Adjust bins if color count requires it
+                use_bins = discrete_bins
+                if n_cols < len(use_bins) - 1:
+                    use_bins = use_bins[: n_cols + 1]
+                cmap_obj = ListedColormap(discrete_colors[: len(use_bins) - 1] if len(discrete_colors) >= len(use_bins) - 1 else discrete_colors)
+                norm_obj = BoundaryNorm(use_bins, len(cmap_obj.colors), clip=True)
+                im = ax.imshow(
+                    single,
+                    extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
+                    cmap=cmap_obj,
+                    norm=norm_obj,
+                    origin="upper",
+                    interpolation="nearest",
+                )
+            else:
+                mn = np.nanpercentile(single, 2) if vmin is None else vmin
+                mx = np.nanpercentile(single, 98) if vmax is None else vmax
+                im = ax.imshow(
+                    single,
+                    extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
+                    cmap=cmap,
+                    vmin=mn,
+                    vmax=mx,
+                    origin="upper",
+                    interpolation=interpolation,
+                )
+            if colorbar and (discrete_bins is None or not discrete_colors):
                 # Add padding if right-side latitude ticks are visible
                 cb_pad = 0.07 if show_right else 0.03
                 cb = plt.colorbar(im, ax=ax, fraction=0.035, pad=cb_pad)
@@ -485,15 +533,19 @@ def plot_carto_map(
                 patch_color, patch_label = k, v
             patch = mpatches.Patch(color=patch_color, label=patch_label)
             legend_handles.append(patch)
-        ax.legend(
-            handles=legend_handles, 
-            loc=legend_loc, 
-            title=legend_title,
-            fontsize=8, 
-            title_fontsize=9,
-            framealpha=0.9,
-            edgecolor="#e5e7eb"
-        )
+        
+        leg_opts = {
+            "handles": legend_handles,
+            "title": legend_title,
+            "fontsize": 8,
+            "title_fontsize": 9,
+            "framealpha": 0.9,
+            "edgecolor": "#e5e7eb",
+        }
+        if legend_pos is not None:
+            ax.legend(bbox_to_anchor=legend_pos, loc=legend_loc, **leg_opts)
+        else:
+            ax.legend(loc=legend_loc, **leg_opts)
 
     # Grid & Graticule lines
     if grid:
@@ -522,10 +574,15 @@ def plot_carto_map(
     )
 
     if scale_bar:
-        draw_scale_bar(ax, bounds, crs=crs, loc=scale_loc, max_fraction=scale_fraction)
+        draw_scale_bar(
+            ax, bounds, crs=crs, loc=scale_loc, pos=scale_pos,
+            max_fraction=scale_fraction, custom_length_m=scale_custom_length_m
+        )
 
     if north_arrow:
-        draw_north_arrow(ax, loc=north_loc, size=north_size, color=north_color)
+        draw_north_arrow(
+            ax, loc=north_loc, pos=north_pos, size=north_size, color=north_color
+        )
 
     # Titles & Labels with clean layered offsets
     if title and subtitle:
@@ -572,6 +629,9 @@ def plot_carto_map(
     if save_path:
         out_p = Path(save_path)
         out_p.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out_p, dpi=dpi, bbox_inches="tight")
+        if tight_bbox:
+            fig.savefig(out_p, dpi=dpi, bbox_inches="tight")
+        else:
+            fig.savefig(out_p, dpi=dpi)
 
     return ax
