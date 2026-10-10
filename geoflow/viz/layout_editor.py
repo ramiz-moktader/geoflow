@@ -40,15 +40,23 @@ DISCRETE_PRESETS: Dict[str, Dict[str, str]] = {
 
 # Standard Paper Sizes (Width, Height in inches for Landscape)
 PAPER_SIZES: Dict[str, Tuple[float, float]] = {
-    "A4 (11.7 x 8.3 in)": (11.69, 8.27),
-    "A3 (16.5 x 11.7 in)": (16.54, 11.69),
-    "A5 (8.3 x 5.8 in)": (8.27, 5.83),
-    "US Letter (11.0 x 8.5 in)": (11.0, 8.5),
-    "US Legal (14.0 x 8.5 in)": (14.0, 8.5),
-    "Tabloid / Ledger (17.0 x 11.0 in)": (17.0, 11.0),
-    "Square (8.0 x 8.0 in)": (8.0, 8.0),
-    "Nature Double Column (7.2 x 5.5 in)": (7.2, 5.5),
-    "Nature Single Column (3.5 x 3.2 in)": (3.5, 3.2),
+    "A4 (11.7 × 8.3 in | 297 × 210 mm)": (11.69, 8.27),
+    "A3 (16.5 × 11.7 in | 420 × 297 mm)": (16.54, 11.69),
+    "A2 (23.4 × 16.5 in | 594 × 420 mm)": (23.39, 16.54),
+    "A1 (33.1 × 23.4 in | 841 × 594 mm)": (33.11, 23.39),
+    "A0 (46.8 × 33.1 in | 1189 × 841 mm)": (46.81, 33.11),
+    "A5 (8.3 × 5.8 in | 210 × 148 mm)": (8.27, 5.83),
+    "US Letter (11.0 × 8.5 in)": (11.0, 8.5),
+    "US Legal (14.0 × 8.5 in)": (14.0, 8.5),
+    "US Tabloid / Ledger (17.0 × 11.0 in)": (17.0, 11.0),
+    "US Executive (10.5 × 7.25 in)": (10.5, 7.25),
+    "Square Large (10.0 × 10.0 in)": (10.0, 10.0),
+    "Square Standard (8.0 × 8.0 in)": (8.0, 8.0),
+    "Nature Double Column (7.2 × 5.5 in)": (7.2, 5.5),
+    "Nature 1.5 Column (5.4 × 4.2 in)": (5.4, 4.2),
+    "Nature Single Column (3.5 × 3.2 in)": (3.5, 3.2),
+    "Science Magazine (9.0 × 7.0 in)": (9.0, 7.0),
+    "Custom Dimensions (Width × Height)": (-1.0, -1.0),
 }
 
 GRATICULE_INTERVALS: Dict[str, Optional[float]] = {
@@ -66,11 +74,11 @@ GRATICULE_INTERVALS: Dict[str, Optional[float]] = {
 
 
 def _make_preview_obj(obj: Any) -> Any:
-    """Create a high-fidelity preview thumbnail (up to 1600px) that eliminates pixelation while keeping redraws sub-30ms."""
+    """Create an optimized preview thumbnail (up to 900px) that gives crisp detail and sub-20ms redraws."""
     if hasattr(obj, "height") and hasattr(obj, "width") and hasattr(obj, "_data"):
         h, w = obj.height, obj.width
-        # Only downsample if raster exceeds 1600px on either dimension
-        step = max(1, max(h, w) // 1600)
+        # Target ~900px for instantaneous preview response without visible pixelation
+        step = max(1, max(h, w) // 900)
         if step > 1:
             try:
                 from rasterio.transform import Affine
@@ -146,20 +154,22 @@ def create_layout_editor(
     # -------------------------------------------------------------
     # 1. UI Control Widgets
     # -------------------------------------------------------------
-    # Tab 1: Canvas & Page Layout
+    # Tab 1: Page Setup & Canvas
     w_title = widgets.Text(
         value=title or "Study Area Map",
         description="Title:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_subtitle = widgets.Text(
         value=subtitle or "GeoFlow Publication Layout",
         description="Subtitle:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_paper = widgets.Dropdown(
         options=list(PAPER_SIZES.items()),
-        value=PAPER_SIZES["A4 (11.7 x 8.3 in)"],
+        value=PAPER_SIZES["A4 (11.7 × 8.3 in | 297 × 210 mm)"],
         description="Paper Size:",
         layout=widgets.Layout(width="95%"),
     )
@@ -169,6 +179,42 @@ def create_layout_editor(
         description="Orientation:",
         layout=widgets.Layout(width="95%"),
     )
+    w_custom_w = widgets.FloatText(
+        value=11.69,
+        description="Width (in):",
+        layout=widgets.Layout(width="48%"),
+        continuous_update=False,
+    )
+    w_custom_h = widgets.FloatText(
+        value=8.27,
+        description="Height (in):",
+        layout=widgets.Layout(width="48%"),
+        continuous_update=False,
+    )
+    box_custom_dims = widgets.HBox(
+        [w_custom_w, w_custom_h],
+        layout=widgets.Layout(display="none", width="95%"),
+    )
+
+    # Twin Paper & Orientation Dropdowns for Tab 6 (Export Canvas)
+    w_paper_export = widgets.Dropdown(
+        options=list(PAPER_SIZES.items()),
+        value=PAPER_SIZES["A4 (11.7 × 8.3 in | 297 × 210 mm)"],
+        description="Paper Size:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_orient_export = widgets.Dropdown(
+        options=["Landscape", "Portrait"],
+        value="Landscape",
+        description="Orientation:",
+        layout=widgets.Layout(width="95%"),
+    )
+    # Bi-directionally sync Page Setup and Export Canvas dropdowns
+    widgets.link((w_paper, "value"), (w_paper_export, "value"))
+    widgets.link((w_orient, "value"), (w_orient_export, "value"))
+
+    w_canvas_info = widgets.HTML(value="")
+    w_export_info = widgets.HTML(value="")
 
     # Tab 2: Cartographic Elements (North Arrow & Scale Bar)
     w_north_arrow = widgets.Checkbox(value=north_arrow, description="Show North Arrow")
@@ -265,6 +311,7 @@ def create_layout_editor(
         value=1000.0,
         description="Custom (m):",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_scale_frac = widgets.FloatSlider(
         value=0.25,
@@ -347,6 +394,7 @@ def create_layout_editor(
         value=0.05,
         description="Custom Val:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_lat_orient = widgets.Dropdown(
         options=[("Vertical (90° Rotated)", "vertical"), ("Horizontal (0°)", "horizontal")],
@@ -423,6 +471,7 @@ def create_layout_editor(
         value=default_cb_label,
         description="Bar Label:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
 
     w_discrete_preset = widgets.Dropdown(
@@ -436,18 +485,21 @@ def create_layout_editor(
         description="Class Bins:",
         placeholder="e.g. -0.1, 0.0, 0.2, 0.5, 0.8",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_custom_colors = widgets.Text(
         value="#2563eb, #d97706, #84cc16, #15803d",
         description="Hex Colors:",
         placeholder="e.g. #2563eb, #d97706, #84cc16, #15803d",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_custom_labels = widgets.Text(
         value="Water / Clouds, Soil / Barren, Moderate Veg, Dense Canopy",
         description="Class Labels:",
         placeholder="e.g. Water, Soil, Moderate Veg, Dense Canopy",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
 
     w_leg_pos_mode = widgets.Dropdown(
@@ -484,13 +536,15 @@ def create_layout_editor(
         value="Classification",
         description="Legend Title:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
 
-    # Tab 6: Export & Reproducible Code
+    # Tab 6: Export Canvas & Reproducible Code
     w_out_file = widgets.Text(
         value=save_path,
         description="Filename:",
         layout=widgets.Layout(width="95%"),
+        continuous_update=False,
     )
     w_dpi = widgets.Dropdown(
         options=[("300 DPI (Publication Standard)", 300), ("600 DPI (Ultra High-Res)", 600), ("150 DPI (Quick Draft)", 150)],
@@ -540,7 +594,7 @@ def create_layout_editor(
     w_code_display = widgets.HTML(value="")
 
     # The Map Viewport Canvas
-    out_map = widgets.Output(layout=widgets.Layout(width="100%", min_height="540px"))
+    out_map = widgets.Output(layout=widgets.Layout(width="100%", min_height="500px"))
 
     # -------------------------------------------------------------
     # 2. Geometry & Extent Calculation
@@ -557,21 +611,48 @@ def create_layout_editor(
         return (cx - nw / 2.0, cy - nh / 2.0, cx + nw / 2.0, cy + nh / 2.0)
 
     def get_figure_dimensions() -> Tuple[float, float]:
-        bw, bh = w_paper.value
+        if w_paper.value == (-1.0, -1.0):
+            bw = max(1.0, float(w_custom_w.value))
+            bh = max(1.0, float(w_custom_h.value))
+        else:
+            bw, bh = w_paper.value
         if w_orient.value == "Landscape":
             return (max(bw, bh), min(bw, bh))
         else:
             return (min(bw, bh), max(bw, bh))
 
+    def get_preview_figure_dimensions() -> Tuple[float, float]:
+        """Calculates scaled figure dimensions for fast, sub-25ms screen preview while preserving exact page aspect ratio."""
+        bw, bh = get_figure_dimensions()
+        aspect = bh / bw
+        base_w = 7.2
+        return (base_w, max(2.8, min(8.5, base_w * aspect)))
+
+    def update_canvas_info():
+        bw, bh = get_figure_dimensions()
+        cur_dpi = w_dpi.value
+        px_w = int(bw * cur_dpi)
+        px_h = int(bh * cur_dpi)
+        mm_w = int(bw * 25.4)
+        mm_h = int(bh * 25.4)
+        info_html = (
+            f"<div style='background:#f1f5f9; border-left:3px solid #3b82f6; padding:6px 10px; border-radius:4px; font-size:11px; margin:4px 0;'>"
+            f"<b>📐 Export Canvas:</b> {bw:.2f} × {bh:.2f} in ({mm_w} × {mm_h} mm)<br/>"
+            f"<b>🖼️ Output Resolution:</b> <b>{px_w} × {px_h} px</b> @ {cur_dpi} DPI ({w_orient.value})"
+            f"</div>"
+        )
+        w_canvas_info.value = info_html
+        w_export_info.value = info_html
+
     # -------------------------------------------------------------
-    # 3. High-Fidelity Rendering Function
+    # 3. High-Fidelity & Blazing Fast Rendering Function
     # -------------------------------------------------------------
     def render_map(export_path: Optional[str] = None, export_dpi: Optional[int] = None):
         if export_path is None:
             out_map.clear_output(wait=True)
         # Use full-res object when exporting, fast high-res preview thumbnail for live UI
         target_obj = image_or_gdf if export_path is not None else preview_obj
-        fig_size = get_figure_dimensions()
+        full_fig_size = get_figure_dimensions()
         cur_extent = get_current_extent()
 
         is_discrete = (w_symbology.value == "discrete")
@@ -661,8 +742,8 @@ def create_layout_editor(
         tight_flag = (w_export_fit.value == "tight")
 
         if export_path is not None:
-            # Export mode: Render and save directly to file without polluting notebook display
-            fig, ax = plt.subplots(figsize=fig_size, dpi=export_dpi or 300)
+            # Export mode: Full-resolution direct file save without bloating notebook memory
+            fig, ax = plt.subplots(figsize=full_fig_size, dpi=export_dpi or 300)
             try:
                 plot_carto_map(
                     target_obj,
@@ -714,9 +795,10 @@ def create_layout_editor(
             finally:
                 plt.close(fig)
         else:
-            # Fast Interactive Preview Mode
+            # Fast Interactive Preview Mode: Scaled screen canvas with 92 DPI for instant redraws
+            preview_size = get_preview_figure_dimensions()
             with out_map:
-                fig, ax = plt.subplots(figsize=fig_size, dpi=115)
+                fig, ax = plt.subplots(figsize=preview_size, dpi=92)
                 try:
                     plot_carto_map(
                         target_obj,
@@ -763,7 +845,7 @@ def create_layout_editor(
                         tight_bbox=tight_flag,
                         ax=ax,
                         save_path=None,
-                        dpi=115,
+                        dpi=92,
                     )
                     display(fig)
                 finally:
@@ -773,6 +855,11 @@ def create_layout_editor(
     # 4. Event Handlers
     # -------------------------------------------------------------
     def on_change(change=None):
+        if w_paper.value == (-1.0, -1.0):
+            box_custom_dims.layout.display = "flex"
+        else:
+            box_custom_dims.layout.display = "none"
+        update_canvas_info()
         if w_auto_refresh.value:
             render_map()
 
@@ -786,7 +873,7 @@ def create_layout_editor(
 
     # Interactive observers
     interactive_widgets = [
-        w_title, w_subtitle, w_paper, w_orient,
+        w_title, w_subtitle, w_paper, w_orient, w_custom_w, w_custom_h,
         w_north_arrow, w_north_mode, w_north_loc, w_north_x, w_north_y, w_north_size,
         w_scale_bar, w_scale_mode, w_scale_loc, w_scale_x, w_scale_y, w_scale_len_mode, w_scale_custom_len, w_scale_frac,
         w_zoom, w_pan_x, w_pan_y,
@@ -797,12 +884,13 @@ def create_layout_editor(
         w_symbology, w_cmap, w_colorbar, w_cb_label,
         w_discrete_preset, w_custom_bins, w_custom_colors, w_custom_labels,
         w_leg_pos_mode, w_discrete_loc, w_leg_x, w_leg_y, w_discrete_title,
-        w_export_fit
+        w_dpi, w_export_fit
     ]
     for w in interactive_widgets:
         w.observe(on_change, names="value")
 
     def on_refresh_clicked(b):
+        update_canvas_info()
         render_map()
         w_status.value = "<div style='color:#10b981; font-size:12px;'>✓ Preview updated.</div>"
 
@@ -908,10 +996,12 @@ def create_layout_editor(
     # 5. Assemble Tabs
     # -------------------------------------------------------------
     tab_canvas = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Map Titles & Paper Canvas</b>"),
+        widgets.HTML("<b style='color:#1e3a8a;'>Map Titles</b>"),
         w_title, w_subtitle,
-        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Paper Size & Orientation</b>"),
+        widgets.HTML("<hr style='margin:6px 0;'><b style='color:#1e3a8a;'>Paper Size & Orientation</b>"),
         w_paper, w_orient,
+        box_custom_dims,
+        w_canvas_info,
     ])
 
     tab_carto = widgets.VBox([
@@ -959,7 +1049,10 @@ def create_layout_editor(
     ])
 
     tab_export = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Publication Export & Dimensions</b>"),
+        widgets.HTML("<b style='color:#1e3a8a;'>Export Page Setup & Canvas Dimensions</b>"),
+        w_paper_export, w_orient_export,
+        w_export_info,
+        widgets.HTML("<hr style='margin:6px 0;'><b style='color:#1e3a8a;'>File Format & Resolution</b>"),
         w_out_file, w_dpi, w_export_fit,
         widgets.HBox([btn_export, btn_colab_download]),
         widgets.HBox([btn_refresh, btn_copy_code]),
@@ -971,12 +1064,12 @@ def create_layout_editor(
         children=[tab_canvas, tab_carto, tab_frame, tab_graticule, tab_symbology, tab_export],
         layout=widgets.Layout(width="420px")
     )
-    tabs.set_title(0, "📄 Canvas")
+    tabs.set_title(0, "📄 Page Setup")
     tabs.set_title(1, "🧭 Carto")
     tabs.set_title(2, "🗺️ Frame")
     tabs.set_title(3, "🌐 Graticule")
     tabs.set_title(4, "🎨 Colors")
-    tabs.set_title(5, "💾 Export")
+    tabs.set_title(5, "💾 Export Canvas")
 
     header = widgets.HTML(
         "<div style='background:linear-gradient(90deg, #1e3a8a 0%, #0284c7 100%); "
@@ -994,7 +1087,8 @@ def create_layout_editor(
         widgets.HBox([left_panel, right_panel], layout=widgets.Layout(width="100%"))
     ], layout=widgets.Layout(padding="10px", border="1px solid #e2e8f0", border_radius="8px", background="#f8fafc"))
 
-    # Initial Render
+    # Initial Render & Info Population
+    update_canvas_info()
     render_map()
 
     return main_view
