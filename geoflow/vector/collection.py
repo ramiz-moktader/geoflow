@@ -227,6 +227,15 @@ class FeatureCollection(EarthObject):
         from geoflow.viz.cartography import plot_carto_map
         return plot_carto_map(self, **kwargs)
 
+    def edit_layout(self, **kwargs: Any) -> Any:
+        """
+        Open the interactive in-notebook ArcGIS-style Layout Editor.
+        Allows real-time visual customization of North Arrow, Scale Bar, Graticules,
+        Colors, Titles, and publication export directly inside Jupyter and Google Colab.
+        """
+        from geoflow.viz.layout_editor import create_layout_editor
+        return create_layout_editor(self, **kwargs)
+
     def to_geodataframe(self) -> gpd.GeoDataFrame:
         return self._gdf.copy()
 

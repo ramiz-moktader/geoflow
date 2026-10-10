@@ -9,6 +9,10 @@ from geoflow.viz.cartography import (
     draw_scale_bar,
     format_degree_ticks,
 )
+from geoflow.viz.layout_editor import create_layout_editor
+
+# Convenient alias
+edit_layout = create_layout_editor
 
 __all__ = [
     "theme",
@@ -19,4 +23,6 @@ __all__ = [
     "draw_north_arrow",
     "draw_scale_bar",
     "format_degree_ticks",
+    "create_layout_editor",
+    "edit_layout",
 ]

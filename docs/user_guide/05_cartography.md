@@ -47,9 +47,32 @@ img.ndvi().plot_map(
 - **`lat_orientation`**: Use `"vertical"` to align latitude text cleanly alongside the left/right neatlines.
 - **`tick_fontfamily`** and **`tick_fontsize`**: Style the coordinates for publication (e.g., `tick_fontfamily="serif"`).
 
-## Interactive Maps
+## Interactive Layout Editor (ArcGIS View in Notebooks)
 
-For exploratory analysis, use the interactive `Map` class:
+GeoFlow provides an in-notebook layout designer similar to the Print Layout view in ArcGIS Pro or QGIS. It runs directly inside **Google Colab, JupyterLab, and VS Code**:
+
+```python
+# Launch the interactive Layout Editor
+editor = img.ndvi().edit_layout(
+    title="Study Area — NDVI",
+    subtitle="Sentinel-2 MSI Level-2A",
+    cmap="RdYlGn",
+)
+
+# Display the editor widget in notebook
+editor
+```
+
+### What You Can Customize Interactively:
+- **📄 Canvas**: Choose standard print sizes (Square, Landscape, Nature Single/Double Column) and custom titles.
+- **🧭 Carto**: Toggle & reposition the North Arrow and dynamically scaled metric Scale Bar.
+- **🌐 Graticule**: Control 4-sided coordinate labels, vertical/horizontal orientations, decimal precision, and grid styles.
+- **🎨 Colors**: Switch between 15+ remote sensing palettes, continuous colorbars, and stretch limits.
+- **💾 Export**: Export directly to 300 / 600 DPI, trigger a 1-click Google Colab download, or auto-generate the exact Python code snippet.
+
+## Interactive Leaflet Maps
+
+For web tile exploratory analysis, use the interactive `Map` class:
 
 ```python
 m = gf.Map()
