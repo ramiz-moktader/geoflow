@@ -7,7 +7,7 @@ Research Design, and Geospatial Machine Learning Framework.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Core abstractions
 from geoflow.core.filter import Filter
@@ -45,6 +45,7 @@ from geoflow import ml
 from geoflow import sampling
 from geoflow import stats
 from geoflow import viz
+from geoflow.viz.layout_editor import create_layout_editor as edit_layout
 
 # Convenience aliases
 import sys
