@@ -16,6 +16,18 @@ from pyproj import Transformer
 
 from geoflow.core.crs import CRS
 
+_TRANSFORMER_CACHE: Dict[str, Any] = {}
+
+
+def get_cached_transformer(crs_key: str) -> Optional[Transformer]:
+    """Retrieve or create a cached pyproj Transformer to eliminate projection pipeline overhead."""
+    if crs_key not in _TRANSFORMER_CACHE:
+        try:
+            _TRANSFORMER_CACHE[crs_key] = Transformer.from_crs(crs_key, "EPSG:4326", always_xy=True)
+        except Exception:
+            _TRANSFORMER_CACHE[crs_key] = None
+    return _TRANSFORMER_CACHE[crs_key]
+
 
 def draw_north_arrow(
     ax: plt.Axes,
@@ -101,15 +113,32 @@ def draw_scale_bar(
     minx, miny, maxx, maxy = bounds
     crs_obj = crs if isinstance(crs, CRS) else CRS(crs)
 
-    # Calculate span in meters
-    center_lat = (miny + maxy) / 2.0
+    center_x = (minx + maxx) / 2.0
+    center_y = (miny + maxy) / 2.0
+
     if crs_obj.is_geographic:
         # 1 deg lon at lat = 111320 * cos(lat)
-        deg_to_m = 111320.0 * math.cos(math.radians(center_lat if abs(center_lat) <= 90 else 0))
+        center_lat = center_y if abs(center_y) <= 90 else 0.0
+        deg_to_m = 111320.0 * math.cos(math.radians(center_lat))
         total_width_m = (maxx - minx) * deg_to_m
     else:
-        total_width_m = (maxx - minx)  # Already in meters
-        deg_to_m = 1.0
+        # Check if Web Mercator (EPSG:3857) where units scale by cos(lat)
+        crs_str = str(crs_obj).lower()
+        if "3857" in crs_str or "web" in crs_str or "mercator" in crs_str:
+            try:
+                tf = get_cached_transformer(str(crs_obj.pyproj_crs))
+                if tf is not None:
+                    _, lat_deg = tf.transform(center_x, center_y)
+                    scale_factor = math.cos(math.radians(lat_deg))
+                else:
+                    scale_factor = 1.0
+            except Exception:
+                scale_factor = 1.0
+            total_width_m = (maxx - minx) * scale_factor
+            deg_to_m = 1.0 / scale_factor
+        else:
+            total_width_m = (maxx - minx)  # Already in true meters (e.g. UTM)
+            deg_to_m = 1.0
 
     if custom_length_m is not None and custom_length_m > 0:
         chosen_m = custom_length_m
@@ -121,7 +150,7 @@ def draw_scale_bar(
         ]
         chosen_m = min(candidates_m, key=lambda c: abs(c - target_bar_m))
 
-    bar_width_deg = chosen_m / deg_to_m
+    bar_width_units = chosen_m / deg_to_m
 
     # Label text
     if chosen_m >= 1000:
@@ -145,12 +174,12 @@ def draw_scale_bar(
             loc_y = miny + (maxy - miny) * 0.06
 
         if "right" in loc_lower:
-            loc_x = maxx - (maxx - minx) * 0.06 - bar_width_deg
+            loc_x = maxx - (maxx - minx) * 0.06 - bar_width_units
         else:
             loc_x = minx + (maxx - minx) * 0.06
 
     # Draw two-toned segmented bar (left black, right white)
-    half_w = bar_width_deg / 2.0
+    half_w = bar_width_units / 2.0
     seg1 = patches.Rectangle(
         (loc_x, loc_y),
         half_w,
@@ -174,7 +203,7 @@ def draw_scale_bar(
     # Tick labels: "0", label
     text_y = loc_y + bar_h * 1.5
     ax.text(loc_x, text_y, "0", ha="center", va="bottom", fontsize=8, fontweight="bold", color="#111827", zorder=101)
-    ax.text(loc_x + bar_width_deg, text_y, label, ha="center", va="bottom", fontsize=8, fontweight="bold", color="#111827", zorder=101)
+    ax.text(loc_x + bar_width_units, text_y, label, ha="center", va="bottom", fontsize=8, fontweight="bold", color="#111827", zorder=101)
 
 
 def format_degree_ticks(
@@ -210,10 +239,7 @@ def format_degree_ticks(
 
     transformer = None
     if not is_geographic:
-        try:
-            transformer = Transformer.from_crs(crs_obj.pyproj_crs, "EPSG:4326", always_xy=True)
-        except Exception:
-            transformer = None
+        transformer = get_cached_transformer(str(crs_obj.pyproj_crs))
 
     if bounds is not None:
         minx, miny, maxx, maxy = bounds
@@ -252,7 +278,11 @@ def format_degree_ticks(
     if interval is not None and interval > 0:
         try:
             if transformer is not None:
-                deg_to_m_x = 111320.0 * math.cos(math.radians(center_y if abs(center_y) <= 90 else 0))
+                try:
+                    _, lat_deg = transformer.transform(center_x, center_y)
+                except Exception:
+                    lat_deg = 0.0
+                deg_to_m_x = 111320.0 * math.cos(math.radians(lat_deg if abs(lat_deg) <= 90 else 0))
                 deg_to_m_y = 111320.0
                 ax.xaxis.set_major_locator(MultipleLocator(interval * deg_to_m_x))
                 ax.yaxis.set_major_locator(MultipleLocator(interval * deg_to_m_y))
@@ -327,7 +357,7 @@ def format_degree_ticks(
             return f"{abs_deg:.{prec}f}° {direction}"
 
     def fmt_lon(x, pos):
-        if prune_corners and prune_str in ("x", "both") and is_x_corner(x):
+        if prune_corners and (prune_str in ("x", "both") or (prune_str in ("true", "auto") and rot_x == 90.0 and rot_y == 0.0)) and is_x_corner(x):
             return ""
         if transformer is not None:
             try:
@@ -396,11 +426,15 @@ def format_degree_ticks(
 def plot_carto_map(
     image_or_gdf: Any,
     bands: Optional[List[str]] = None,
+    active_band: Optional[str] = None,
+    display_mode: Optional[str] = None,
     cmap: str = "viridis",
     vmin: Optional[float] = None,
     vmax: Optional[float] = None,
     title: Optional[str] = None,
     subtitle: Optional[str] = None,
+    title_fontsize: Optional[int] = None,
+    subtitle_fontsize: Optional[int] = None,
     north_arrow: bool = True,
     north_loc: str = "top-right",
     north_pos: Optional[Tuple[float, float]] = None,
@@ -470,9 +504,16 @@ def plot_carto_map(
     # Plot data
     if hasattr(image_or_gdf, "visualize") and hasattr(image_or_gdf, "select"):
         # Image object
-        target_bands = bands or (image_or_gdf.bands[:3] if image_or_gdf.count >= 3 else [image_or_gdf.bands[0]])
-        if len(target_bands) >= 3:
-            rgb_arr = image_or_gdf.visualize({"bands": target_bands})
+        all_bands = list(image_or_gdf.bands) if getattr(image_or_gdf, "bands", None) else []
+        is_rgb = (display_mode == "rgb") or (
+            display_mode is None
+            and active_band is None
+            and (len(bands) >= 3 if bands else len(all_bands) >= 3)
+        )
+
+        if is_rgb:
+            rgb_bands = bands or (all_bands[:3] if len(all_bands) >= 3 else all_bands)
+            rgb_arr = image_or_gdf.visualize({"bands": rgb_bands})
             im = ax.imshow(
                 rgb_arr,
                 extent=[image_or_gdf.bounds[0], image_or_gdf.bounds[2], image_or_gdf.bounds[1], image_or_gdf.bounds[3]],
@@ -480,11 +521,11 @@ def plot_carto_map(
                 interpolation=interpolation,
             )
         else:
-            single = image_or_gdf.select(target_bands[0]).data[0]
+            chosen_b = active_band or (bands[0] if bands else (all_bands[0] if all_bands else None))
+            single = image_or_gdf.select(chosen_b).data[0] if chosen_b else image_or_gdf.data[0]
             if discrete_bins is not None and discrete_colors is not None and len(discrete_bins) >= 2:
                 from matplotlib.colors import BoundaryNorm, ListedColormap
                 n_cols = len(discrete_colors)
-                # Adjust bins if color count requires it
                 use_bins = discrete_bins
                 if n_cols < len(use_bins) - 1:
                     use_bins = use_bins[: n_cols + 1]
@@ -514,7 +555,7 @@ def plot_carto_map(
                 # Add padding if right-side latitude ticks are visible
                 cb_pad = 0.07 if show_right else 0.03
                 cb = plt.colorbar(im, ax=ax, fraction=0.035, pad=cb_pad)
-                cb.set_label(colorbar_label or target_bands[0], fontsize=9)
+                cb.set_label(colorbar_label or chosen_b or "Value", fontsize=9)
                 cb.ax.tick_params(labelsize=8)
     else:
         # Vector / FeatureCollection
@@ -584,11 +625,22 @@ def plot_carto_map(
             ax, loc=north_loc, pos=north_pos, size=north_size, color=north_color
         )
 
+    # Proportional font scaling based on figure diagonal size
+    try:
+        bw, bh = fig.get_size_inches()
+        diag = math.hypot(bw, bh)
+        scale_f = max(0.7, min(3.5, diag / 14.3))
+    except Exception:
+        scale_f = 1.0
+
+    calc_title_size = title_fontsize or max(10, int(round(12 * scale_f)))
+    calc_sub_size = subtitle_fontsize or max(8, int(round(9 * scale_f)))
+
     # Titles & Labels with clean layered offsets
     if title and subtitle:
-        t_pad = 36 if show_top else 20
-        sub_pts = 18 if show_top else 5
-        ax.set_title(title, fontsize=12, fontweight="bold", pad=t_pad)
+        t_pad = int(round((36 if show_top else 20) * scale_f))
+        sub_pts = int(round((18 if show_top else 5) * scale_f))
+        ax.set_title(title, fontsize=calc_title_size, fontweight="bold", pad=t_pad)
         ax.annotate(
             subtitle,
             xy=(0.5, 1.0),
@@ -597,14 +649,14 @@ def plot_carto_map(
             textcoords="offset points",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=calc_sub_size,
             color="#4b5563",
         )
     elif title:
-        t_pad = 22 if show_top else 12
-        ax.set_title(title, fontsize=12, fontweight="bold", pad=t_pad)
+        t_pad = int(round((22 if show_top else 12) * scale_f))
+        ax.set_title(title, fontsize=calc_title_size, fontweight="bold", pad=t_pad)
     elif subtitle:
-        sub_pts = 16 if show_top else 4
+        sub_pts = int(round((16 if show_top else 4) * scale_f))
         ax.annotate(
             subtitle,
             xy=(0.5, 1.0),
@@ -613,7 +665,7 @@ def plot_carto_map(
             textcoords="offset points",
             ha="center",
             va="bottom",
-            fontsize=9,
+            fontsize=calc_sub_size,
             color="#4b5563",
         )
 

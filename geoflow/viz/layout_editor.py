@@ -77,7 +77,6 @@ def _make_preview_obj(obj: Any) -> Any:
     """Create an optimized preview thumbnail (up to 900px) that gives crisp detail and sub-20ms redraws."""
     if hasattr(obj, "height") and hasattr(obj, "width") and hasattr(obj, "_data"):
         h, w = obj.height, obj.width
-        # Target ~900px for instantaneous preview response without visible pixelation
         step = max(1, max(h, w) // 900)
         if step > 1:
             try:
@@ -130,6 +129,11 @@ def create_layout_editor(
 
     # Cache high-fidelity preview object
     preview_obj = _make_preview_obj(image_or_gdf)
+
+    # Detect bands and multi-band status
+    has_bands = hasattr(image_or_gdf, "bands") and image_or_gdf.bands
+    all_band_list = list(image_or_gdf.bands) if has_bands else ["B1"]
+    has_multiband = len(all_band_list) >= 3
 
     # Precalculate vmin and vmax once so interactive redraws skip heavy percentile operations
     computed_vmin = vmin
@@ -323,7 +327,13 @@ def create_layout_editor(
         layout=widgets.Layout(width="95%"),
     )
 
-    # Tab 3: Map Frame Navigation (Zoom & Pan)
+    # Tab 3: Map Frame Navigation (Zoom, Pan & Exact Coordinates)
+    w_extent_mode = widgets.Dropdown(
+        options=[("Interactive Zoom & Pan", "slider"), ("Exact Extent Coordinates", "coords")],
+        value="slider",
+        description="Navigation:",
+        layout=widgets.Layout(width="95%"),
+    )
     w_zoom = widgets.FloatSlider(
         value=1.0,
         min=0.4,
@@ -351,8 +361,20 @@ def create_layout_editor(
         continuous_update=False,
         layout=widgets.Layout(width="95%"),
     )
+
+    # Exact bounding coordinates
+    b_minx, b_miny, b_maxx, b_maxy = image_or_gdf.bounds
+    w_minx = widgets.FloatText(value=round(b_minx, 5), description="West (Min X):", layout=widgets.Layout(width="48%"), continuous_update=False)
+    w_maxx = widgets.FloatText(value=round(b_maxx, 5), description="East (Max X):", layout=widgets.Layout(width="48%"), continuous_update=False)
+    w_miny = widgets.FloatText(value=round(b_miny, 5), description="South (Min Y):", layout=widgets.Layout(width="48%"), continuous_update=False)
+    w_maxy = widgets.FloatText(value=round(b_maxy, 5), description="North (Max Y):", layout=widgets.Layout(width="48%"), continuous_update=False)
+    box_coords = widgets.VBox([
+        widgets.HBox([w_minx, w_maxx]),
+        widgets.HBox([w_miny, w_maxy]),
+    ], layout=widgets.Layout(display="none", width="95%"))
+
     btn_reset_frame = widgets.Button(
-        description="⟲ Reset Zoom & Pan",
+        description="⟲ Reset View Extent",
         button_style="warning",
         layout=widgets.Layout(width="95%"),
     )
@@ -449,7 +471,24 @@ def create_layout_editor(
         layout=widgets.Layout(width="95%"),
     )
 
-    # Tab 5: Symbology & Classified Legends
+    # Tab 5: Symbology, Band Selection & Classified Legends
+    w_disp_mode = widgets.Dropdown(
+        options=[("Single Band (Colormap / Classified)", "single"), ("RGB Composite", "rgb")] if has_multiband else [("Single Band", "single")],
+        value="single",
+        description="Layer Mode:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_active_band = widgets.Dropdown(
+        options=all_band_list,
+        value=all_band_list[0],
+        description="Active Band:",
+        layout=widgets.Layout(width="95%"),
+    )
+    w_rgb_r = widgets.Dropdown(options=all_band_list, value=all_band_list[0], description="R:", layout=widgets.Layout(width="31%"))
+    w_rgb_g = widgets.Dropdown(options=all_band_list, value=all_band_list[1] if len(all_band_list) > 1 else all_band_list[0], description="G:", layout=widgets.Layout(width="31%"))
+    w_rgb_b = widgets.Dropdown(options=all_band_list, value=all_band_list[2] if len(all_band_list) > 2 else all_band_list[0], description="B:", layout=widgets.Layout(width="31%"))
+    box_rgb_channels = widgets.HBox([w_rgb_r, w_rgb_g, w_rgb_b], layout=widgets.Layout(width="95%", display="none"))
+
     w_symbology = widgets.Dropdown(
         options=[("Continuous Colorbar", "continuous"), ("Discrete Classified Legend", "discrete")],
         value="continuous",
@@ -501,6 +540,7 @@ def create_layout_editor(
         layout=widgets.Layout(width="95%"),
         continuous_update=False,
     )
+    w_class_notice = widgets.HTML(value="")
 
     w_leg_pos_mode = widgets.Dropdown(
         options=[("Preset Corner", "corner"), ("Custom Position (X, Y %)", "custom")],
@@ -600,6 +640,8 @@ def create_layout_editor(
     # 2. Geometry & Extent Calculation
     # -------------------------------------------------------------
     def get_current_extent() -> Tuple[float, float, float, float]:
+        if w_extent_mode.value == "coords":
+            return (float(w_minx.value), float(w_miny.value), float(w_maxx.value), float(w_maxy.value))
         minx, miny, maxx, maxy = image_or_gdf.bounds
         w = maxx - minx
         h = maxy - miny
@@ -655,7 +697,18 @@ def create_layout_editor(
         full_fig_size = get_figure_dimensions()
         cur_extent = get_current_extent()
 
-        is_discrete = (w_symbology.value == "discrete")
+        # Resolve display mode and active band
+        is_rgb_mode = (w_disp_mode.value == "rgb")
+        if is_rgb_mode:
+            active_bands_arg = [w_rgb_r.value, w_rgb_g.value, w_rgb_b.value]
+            active_band_arg = None
+            disp_mode_arg = "rgb"
+        else:
+            active_bands_arg = None
+            active_band_arg = w_active_band.value
+            disp_mode_arg = "single"
+
+        is_discrete = (w_symbology.value == "discrete" and not is_rgb_mode)
         active_bins: Optional[List[float]] = None
         active_colors: Optional[List[str]] = None
         leg_labels: Optional[Dict[str, str]] = None
@@ -666,6 +719,8 @@ def create_layout_editor(
                     c_bins = [float(x.strip()) for x in w_custom_bins.value.split(",") if x.strip()]
                     c_cols = [x.strip() for x in w_custom_colors.value.split(",") if x.strip()]
                     raw_labs = [x.strip() for x in w_custom_labels.value.split(",") if x.strip()]
+                    if len(c_bins) < 2 or len(c_cols) < 1:
+                        raise ValueError("Must provide at least 2 bins and 1 color")
                     if len(raw_labs) != len(c_cols):
                         raw_labs = []
                         for i in range(len(c_cols)):
@@ -678,13 +733,19 @@ def create_layout_editor(
                             else:
                                 raw_labs.append(f"Class {i+1}")
                     leg_labels = {lab: col for lab, col in zip(raw_labs, c_cols)}
-                    active_bins = c_bins if len(c_bins) >= 2 else None
-                    active_colors = c_cols if len(c_cols) >= 1 else None
-                except Exception:
+                    active_bins = c_bins
+                    active_colors = c_cols
+                    w_class_notice.value = ""
+                except Exception as ex:
+                    w_class_notice.value = (
+                        f"<div style='color:#b45309; background:#fef3c7; padding:4px 8px; border-radius:4px; font-size:10px; margin-top:2px;'>"
+                        f"⚠️ Custom bins notice: {ex}. Using default preview.</div>"
+                    )
                     leg_labels = DISCRETE_PRESETS["NDVI 4-Class (Water, Soil, Moderate, Dense)"]
                     active_bins = [-0.1, 0.0, 0.2, 0.5, 0.8]
                     active_colors = ["#2563eb", "#d97706", "#84cc16", "#15803d"]
             else:
+                w_class_notice.value = ""
                 leg_labels = DISCRETE_PRESETS.get(w_discrete_preset.value)
                 if "NDVI 4-Class" in w_discrete_preset.value:
                     active_bins = [-0.1, 0.0, 0.2, 0.5, 0.8]
@@ -747,6 +808,9 @@ def create_layout_editor(
             try:
                 plot_carto_map(
                     target_obj,
+                    bands=active_bands_arg,
+                    active_band=active_band_arg,
+                    display_mode=disp_mode_arg,
                     title=w_title.value,
                     subtitle=w_subtitle.value,
                     cmap=w_cmap.value,
@@ -764,9 +828,9 @@ def create_layout_editor(
                     grid=w_grid.value,
                     grid_style=w_grid_style.value,
                     grid_alpha=w_grid_alpha.value,
-                    colorbar=(w_colorbar.value and not is_discrete),
+                    colorbar=(w_colorbar.value and not is_discrete and not is_rgb_mode),
                     colorbar_label=w_cb_label.value,
-                    legend=is_discrete,
+                    legend=(is_discrete and not is_rgb_mode),
                     legend_labels=leg_labels,
                     legend_loc=leg_l,
                     legend_pos=leg_p,
@@ -802,6 +866,9 @@ def create_layout_editor(
                 try:
                     plot_carto_map(
                         target_obj,
+                        bands=active_bands_arg,
+                        active_band=active_band_arg,
+                        display_mode=disp_mode_arg,
                         title=w_title.value,
                         subtitle=w_subtitle.value,
                         cmap=w_cmap.value,
@@ -819,9 +886,9 @@ def create_layout_editor(
                         grid=w_grid.value,
                         grid_style=w_grid_style.value,
                         grid_alpha=w_grid_alpha.value,
-                        colorbar=(w_colorbar.value and not is_discrete),
+                        colorbar=(w_colorbar.value and not is_discrete and not is_rgb_mode),
                         colorbar_label=w_cb_label.value,
-                        legend=is_discrete,
+                        legend=(is_discrete and not is_rgb_mode),
                         legend_labels=leg_labels,
                         legend_loc=leg_l,
                         legend_pos=leg_p,
@@ -859,6 +926,37 @@ def create_layout_editor(
             box_custom_dims.layout.display = "flex"
         else:
             box_custom_dims.layout.display = "none"
+
+        # Update Frame Navigation UI visibility
+        if w_extent_mode.value == "coords":
+            box_coords.layout.display = "flex"
+            w_zoom.layout.display = "none"
+            w_pan_x.layout.display = "none"
+            w_pan_y.layout.display = "none"
+        else:
+            box_coords.layout.display = "none"
+            w_zoom.layout.display = "flex"
+            w_pan_x.layout.display = "flex"
+            w_pan_y.layout.display = "flex"
+
+        # Update Symbology / Band channel pickers visibility
+        if w_disp_mode.value == "rgb":
+            box_rgb_channels.layout.display = "flex"
+            w_active_band.layout.display = "none"
+            w_symbology.layout.display = "none"
+            w_cmap.layout.display = "none"
+            w_colorbar.layout.display = "none"
+            w_cb_label.layout.display = "none"
+            w_discrete_preset.layout.display = "none"
+        else:
+            box_rgb_channels.layout.display = "none"
+            w_active_band.layout.display = "flex"
+            w_symbology.layout.display = "flex"
+            w_cmap.layout.display = "flex"
+            w_colorbar.layout.display = "flex"
+            w_cb_label.layout.display = "flex"
+            w_discrete_preset.layout.display = "flex"
+
         update_canvas_info()
         if w_auto_refresh.value:
             render_map()
@@ -867,6 +965,10 @@ def create_layout_editor(
         w_zoom.value = 1.0
         w_pan_x.value = 0.0
         w_pan_y.value = 0.0
+        w_minx.value = round(b_minx, 5)
+        w_maxx.value = round(b_maxx, 5)
+        w_miny.value = round(b_miny, 5)
+        w_maxy.value = round(b_maxy, 5)
         render_map()
 
     btn_reset_frame.on_click(on_reset_frame)
@@ -876,11 +978,12 @@ def create_layout_editor(
         w_title, w_subtitle, w_paper, w_orient, w_custom_w, w_custom_h,
         w_north_arrow, w_north_mode, w_north_loc, w_north_x, w_north_y, w_north_size,
         w_scale_bar, w_scale_mode, w_scale_loc, w_scale_x, w_scale_y, w_scale_len_mode, w_scale_custom_len, w_scale_frac,
-        w_zoom, w_pan_x, w_pan_y,
+        w_extent_mode, w_zoom, w_pan_x, w_pan_y, w_minx, w_maxx, w_miny, w_maxy,
         w_show_bottom, w_show_left, w_show_top, w_show_right,
         w_coord_fmt, w_grat_mode, w_grat_interval, w_custom_interval,
         w_lat_orient, w_lon_orient, w_deg_prec,
         w_prune, w_grid, w_grid_style, w_grid_alpha, w_fontfamily, w_fontsize,
+        w_disp_mode, w_active_band, w_rgb_r, w_rgb_g, w_rgb_b,
         w_symbology, w_cmap, w_colorbar, w_cb_label,
         w_discrete_preset, w_custom_bins, w_custom_colors, w_custom_labels,
         w_leg_pos_mode, w_discrete_loc, w_leg_x, w_leg_y, w_discrete_title,
@@ -898,31 +1001,37 @@ def create_layout_editor(
         out_f = w_out_file.value.strip() or "publication_map.png"
         target_dpi = w_dpi.value
         w_status.value = f"<div style='color:#3b82f6; font-size:12px;'>Rendering {target_dpi} DPI full-res map to <b>{out_f}</b>...</div>"
-        render_map(export_path=out_f, export_dpi=target_dpi)
-        p = Path(out_f).resolve()
-        w_status.value = (
-            f"<div style='color:#10b981; font-weight:bold; font-size:13px;'>"
-            f"✓ Successfully exported publication map to: <code>{p}</code> ({target_dpi} DPI)</div>"
-        )
+        try:
+            render_map(export_path=out_f, export_dpi=target_dpi)
+            p = Path(out_f).resolve()
+            w_status.value = (
+                f"<div style='color:#10b981; font-weight:bold; font-size:13px;'>"
+                f"✓ Successfully exported publication map to: <code>{p}</code> ({target_dpi} DPI)</div>"
+            )
+        except Exception as err:
+            w_status.value = f"<div style='color:#ef4444; font-weight:bold; font-size:12px;'>❌ Export failed: {err}</div>"
 
     def on_colab_download_clicked(b):
         out_f = w_out_file.value.strip() or "publication_map.png"
         target_dpi = w_dpi.value
         w_status.value = f"<div style='color:#3b82f6; font-size:12px;'>Generating {target_dpi} DPI map for download...</div>"
-        render_map(export_path=out_f, export_dpi=target_dpi)
-        p = Path(out_f).resolve()
-        if "google.colab" in sys.modules:
-            try:
-                from google.colab import files as colab_files
-                colab_files.download(str(p))
-                w_status.value = f"<div style='color:#10b981; font-size:13px;'>✓ Colab download started for <b>{out_f}</b></div>"
-                return
-            except Exception:
-                pass
-        w_status.value = f"<div style='color:#10b981; font-size:13px;'>✓ Saved locally: <code>{p}</code></div>"
+        try:
+            render_map(export_path=out_f, export_dpi=target_dpi)
+            p = Path(out_f).resolve()
+            if "google.colab" in sys.modules:
+                try:
+                    from google.colab import files as colab_files
+                    colab_files.download(str(p))
+                    w_status.value = f"<div style='color:#10b981; font-size:13px;'>✓ Colab download started for <b>{out_f}</b></div>"
+                    return
+                except Exception:
+                    pass
+            w_status.value = f"<div style='color:#10b981; font-size:13px;'>✓ Saved locally: <code>{p}</code></div>"
+        except Exception as err:
+            w_status.value = f"<div style='color:#ef4444; font-weight:bold; font-size:12px;'>❌ Download failed: {err}</div>"
 
     def on_copy_code_clicked(b):
-        is_discrete = (w_symbology.value == "discrete")
+        is_rgb_mode = (w_disp_mode.value == "rgb")
         ext = get_current_extent()
         
         # Calculate scale parameters
@@ -950,6 +1059,9 @@ def create_layout_editor(
         code_str = (
             f"# Reproduce this exact cartographic layout in Python:\n"
             f"ax = img.plot_map(\n"
+            f"    bands={[w_rgb_r.value, w_rgb_g.value, w_rgb_b.value] if is_rgb_mode else None},\n"
+            f"    active_band={repr(w_active_band.value) if not is_rgb_mode else None},\n"
+            f"    display_mode={repr(w_disp_mode.value)},\n"
             f"    title={repr(w_title.value)},\n"
             f"    subtitle={repr(w_subtitle.value)},\n"
             f"    cmap={repr(w_cmap.value)},\n"
@@ -1016,9 +1128,10 @@ def create_layout_editor(
     ])
 
     tab_frame = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Map Frame Navigation (Zoom & Pan)</b>"),
-        widgets.HTML("<div style='font-size:11px; color:#6b7280; margin-bottom:4px;'>Adjust study area boundaries within the neatline:</div>"),
+        widgets.HTML("<b style='color:#1e3a8a;'>Map Frame Navigation & Extent</b>"),
+        w_extent_mode,
         w_zoom, w_pan_x, w_pan_y,
+        box_coords,
         btn_reset_frame,
     ])
 
@@ -1034,14 +1147,16 @@ def create_layout_editor(
     ])
 
     tab_symbology = widgets.VBox([
-        widgets.HTML("<b style='color:#1e3a8a;'>Symbology Mode & Palettes</b>"),
+        widgets.HTML("<b style='color:#1e3a8a;'>Layer Display Mode & Bands</b>"),
+        w_disp_mode, w_active_band, box_rgb_channels,
+        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Symbology Mode & Palettes</b>"),
         w_symbology,
-        widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Continuous Colorbar</b>"),
         w_cmap, w_colorbar, w_cb_label,
         widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Discrete Thematic Classification</b>"),
         w_discrete_preset,
         widgets.HTML("<div style='font-size:11px; color:#6b7280; margin:2px 0;'>Custom bins & colors (active when 'Custom Classes' selected):</div>"),
         w_custom_bins, w_custom_colors, w_custom_labels,
+        w_class_notice,
         widgets.HTML("<hr style='margin:4px 0;'><b style='color:#1e3a8a;'>Classified Legend Placement</b>"),
         w_leg_pos_mode, w_discrete_loc,
         widgets.HBox([w_leg_x, w_leg_y]),
