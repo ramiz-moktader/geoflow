@@ -15,6 +15,8 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
     Uses earthaccess if available, otherwise falls back to environment variables or .netrc.
     """
     global _SESSION
+    if is_authenticated():
+        return True
     try:
         import earthaccess
         auth = earthaccess.login(strategy=strategy, persist=persist)
