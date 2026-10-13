@@ -14,11 +14,17 @@ It specifically introduces first-class features for **Spatial Statistics**, **Le
 3. [Spatial Statistics](user_guide/03_spatial_statistics.md)
 4. [Machine Learning and Validation](user_guide/04_machine_learning.md)
 5. [Cartography and Visualization](user_guide/05_cartography.md)
+6. [Comprehensive End-to-End Tutorial](user_guide/06_end_to_end_tutorial.md)
 
 ### API Reference
 - [Core (`gf.core`)](api_reference/core.md)
 - [Raster (`gf.raster`)](api_reference/raster.md)
-- [Vector (`gf.vector`)](api_reference/vector.md)
-- [Spatial Statistics (`gf.spatial` & `gf.stats`)](api_reference/spatial.md)
-- [Visualization (`gf.viz`)](api_reference/viz.md)
-- [Machine Learning & Validation (`gf.ml` & `gf.validation`)](api_reference/ml_and_validation.md)
+- [Vector & Geometry (`gf.vector` & `gf.geometry`)](api_reference/vector.md)
+- [Earthdata & Datasets (`gf.earthdata`, `gf.auth`, `gf.datasets`)](api_reference/earthdata_and_datasets.md)
+- [Spatial Statistics & Inference (`gf.spatial` & `gf.stats`)](api_reference/spatial.md)
+- [Machine Learning & Validation (`gf.ml`, `gf.validation`, `gf.sampling`)](api_reference/ml_and_validation.md)
+- [Visualization & Cartography (`gf.viz` & `gf.visualization`)](api_reference/viz.md)
+- [CLI Reference (`geoflow.cli`)](api_reference/cli.md)
+
+### Development
+- [Contributor & Architecture Guide](contributing.md)

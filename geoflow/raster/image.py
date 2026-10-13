@@ -171,15 +171,23 @@ class Image(EarthObject):
     def geometry(self) -> Geometry:
         return Geometry.BBox(*self.bounds, crs=self._crs)
 
-    def _clone(self, data: np.ndarray, band_names: Optional[List[str]] = None) -> Any:
+    def _clone(
+        self,
+        data: np.ndarray,
+        band_names: Optional[List[str]] = None,
+        transform: Optional[Affine] = None,
+        crs: Optional[CRS] = None,
+        nodata: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Any:
         names = band_names if band_names is not None else self._band_names
         new_obj = self.__class__(
             data,
-            transform=self._transform,
-            crs=self._crs,
+            transform=transform if transform is not None else self._transform,
+            crs=crs if crs is not None else self._crs,
             band_names=names,
-            nodata=self._nodata,
-            metadata=dict(self._metadata),
+            nodata=self._nodata if nodata is None else nodata,
+            metadata=dict(self._metadata) if metadata is None else dict(metadata),
         )
         # Propagate custom subclass attributes
         for k, v in self.__dict__.items():
@@ -334,14 +342,18 @@ class Image(EarthObject):
     def __gt__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a > b).astype(np.float32))
 
-    def __gte__(self, other: Any) -> Image:
+    def __ge__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a >= b).astype(np.float32))
+
+    __gte__ = __ge__
 
     def __lt__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a < b).astype(np.float32))
 
-    def __lte__(self, other: Any) -> Image:
+    def __le__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a <= b).astype(np.float32))
+
+    __lte__ = __le__
 
     def __eq__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a == b).astype(np.float32))
@@ -421,27 +433,38 @@ class Image(EarthObject):
         r = red or self._find_band(["B4", "B04", "RED"])
         return self.normalizedDifference([n, r]).rename(["NDVI"])
 
-    def ndwi(self, green: str = "B3", nir: str = "B8") -> Image:
-        return self.normalizedDifference([green, nir]).rename(["NDWI"])
+    def ndwi(self, green: Optional[str] = None, nir: Optional[str] = None) -> Image:
+        g = green or self._find_band(["B3", "B03", "GREEN", "green"])
+        n = nir or self._find_band(["B8", "B8A", "B08", "NIR", "nir"])
+        return self.normalizedDifference([g, n]).rename(["NDWI"])
 
-    def ndbi(self, swir: str = "B11", nir: str = "B8") -> Image:
-        return self.normalizedDifference([swir, nir]).rename(["NDBI"])
+    def ndbi(self, swir: Optional[str] = None, nir: Optional[str] = None) -> Image:
+        s = swir or self._find_band(["B11", "SWIR", "SWIR1", "swir"])
+        n = nir or self._find_band(["B8", "B8A", "B08", "NIR", "nir"])
+        return self.normalizedDifference([s, n]).rename(["NDBI"])
 
-    def nbr(self, nir: str = "B8", swir2: str = "B12") -> Image:
-        return self.normalizedDifference([nir, swir2]).rename(["NBR"])
+    def nbr(self, nir: Optional[str] = None, swir2: Optional[str] = None) -> Image:
+        n = nir or self._find_band(["B8", "B8A", "B08", "NIR", "nir"])
+        s2 = swir2 or self._find_band(["B12", "SWIR2", "swir2"])
+        return self.normalizedDifference([n, s2]).rename(["NBR"])
 
-    def evi(self, nir: str = "B8", red: str = "B4", blue: str = "B2") -> Image:
-        n = self.select(nir)._data[0]
-        r = self.select(red)._data[0]
-        b = self.select(blue)._data[0]
+    def evi(self, nir: Optional[str] = None, red: Optional[str] = None, blue: Optional[str] = None) -> Image:
+        n_name = nir or self._find_band(["B8", "B8A", "B08", "NIR", "nir"])
+        r_name = red or self._find_band(["B4", "B04", "RED", "red"])
+        b_name = blue or self._find_band(["B2", "B02", "BLUE", "blue"])
+        n = self.select(n_name)._data[0]
+        r = self.select(r_name)._data[0]
+        b = self.select(b_name)._data[0]
         with np.errstate(divide="ignore", invalid="ignore"):
             denom = n + 6.0 * r - 7.5 * b + 1.0
             evi_arr = np.where(denom != 0, 2.5 * ((n - r) / denom), np.nan)
         return self._clone(evi_arr[np.newaxis, :, :], band_names=["EVI"])
 
-    def savi(self, nir: str = "B8", red: str = "B4", L: float = 0.5) -> Image:
-        n = self.select(nir)._data[0]
-        r = self.select(red)._data[0]
+    def savi(self, nir: Optional[str] = None, red: Optional[str] = None, L: float = 0.5) -> Image:
+        n_name = nir or self._find_band(["B8", "B8A", "B08", "NIR", "nir"])
+        r_name = red or self._find_band(["B4", "B04", "RED", "red"])
+        n = self.select(n_name)._data[0]
+        r = self.select(r_name)._data[0]
         with np.errstate(divide="ignore", invalid="ignore"):
             denom = n + r + L
             savi_arr = np.where(denom != 0, ((n - r) / denom) * (1.0 + L), np.nan)
@@ -515,6 +538,136 @@ class Image(EarthObject):
     def fill_nodata(self, value: float = 0.0) -> Image:
         return self.unmask(value)
 
+    def auto_scale(
+        self,
+        scale: Optional[float] = None,
+        offset: Optional[float] = None,
+        dataset: Optional[str] = None,
+        exclude_bands: Optional[List[str]] = None,
+    ) -> Image:
+        """
+        Apply radiometric scaling and offset to reflectance / radiance bands.
+        Automatically avoids scaling QA/mask bands.
+        
+        Parameters
+        ----------
+        scale : float, optional
+            Multiplicative scale factor (e.g. 0.0001 for HLS / Sentinel-2).
+        offset : float, optional
+            Additive offset (e.g. -0.2 for Landsat Collection 2).
+        dataset : str, optional
+            Preconfigured profile: 'HLS', 'LANDSAT_C2', 'SENTINEL_2', 'MODIS'.
+        exclude_bands : list of str, optional
+            Band names to exclude from scaling (QA bands auto-excluded by default).
+        """
+        qa_names = {"fmask", "qa_pixel", "scl", "qa", "qa60", "mask"}
+        excluded = set(b.lower() for b in (exclude_bands or [])) | qa_names
+
+        # Dataset presets
+        if dataset:
+            ds = dataset.upper()
+            if ds == "HLS":
+                scale = 0.0001 if scale is None else scale
+                offset = 0.0 if offset is None else offset
+            elif ds in ("LANDSAT_C2", "LANDSAT"):
+                scale = 0.0000275 if scale is None else scale
+                offset = -0.2 if offset is None else offset
+            elif ds in ("SENTINEL_2", "SENTINEL2"):
+                scale = 0.0001 if scale is None else scale
+                offset = 0.0 if offset is None else offset
+            elif ds == "MODIS":
+                scale = 0.0001 if scale is None else scale
+                offset = 0.0 if offset is None else offset
+
+        if scale is None:
+            scale = self._metadata.get("scale", self._metadata.get("scale_factor", 1.0))
+        if offset is None:
+            offset = self._metadata.get("offset", self._metadata.get("add_offset", 0.0))
+
+        out_data = self._data.copy()
+        for i, name in enumerate(self._band_names):
+            if name.lower() not in excluded:
+                out_data[i] = out_data[i] * float(scale) + float(offset)
+        
+        meta = dict(self._metadata)
+        meta["scaled"] = True
+        meta["scale_factor"] = scale
+        meta["offset"] = offset
+        return self._clone(out_data, metadata=meta)
+
+    def mask_clouds(
+        self,
+        qa_band: Optional[str] = None,
+        method: str = "auto",
+        keep_clear: bool = True,
+    ) -> Image:
+        """
+        Mask cloud, shadow, and cirrus pixels using quality assessment (QA) bands.
+        Supports Harmonized Landsat Sentinel-2 (HLS Fmask), Landsat Collection 2 (QA_PIXEL),
+        and Sentinel-2 Scene Classification Layer (SCL).
+        
+        Parameters
+        ----------
+        qa_band : str, optional
+            Name of QA band. If None, auto-detected from ['Fmask', 'QA_PIXEL', 'SCL', 'QA', 'QA60'].
+        method : str, default 'auto'
+            Masking profile: 'auto', 'fmask', 'landsat_c2', 'scl'.
+        keep_clear : bool, default True
+            If True, retains clear pixels and sets cloudy/shadowed pixels to NaN.
+        """
+        # Find QA band
+        if qa_band is None:
+            candidates = ["Fmask", "fmask", "QA_PIXEL", "qa_pixel", "SCL", "scl", "QA", "qa", "QA60", "qa60"]
+            for cand in candidates:
+                if cand in self._band_names:
+                    qa_band = cand
+                    break
+        
+        if qa_band is None or qa_band not in self._band_names:
+            raise ValueError(
+                f"No QA band found in image. Available bands: {self._band_names}. "
+                "Specify qa_band or load an image with Fmask, QA_PIXEL, or SCL."
+            )
+
+        qa_arr = self.select(qa_band)._data[0].astype(np.uint32)
+        band_lower = qa_band.lower()
+        
+        # Determine method
+        chosen_method = method.lower()
+        if chosen_method == "auto":
+            if "fmask" in band_lower:
+                chosen_method = "fmask"
+            elif "scl" in band_lower:
+                chosen_method = "scl"
+            elif "pixel" in band_lower or "qa" in band_lower:
+                chosen_method = "landsat_c2"
+            else:
+                chosen_method = "fmask"
+
+        if chosen_method == "fmask":
+            # HLS Fmask: Bit 1 = cloud, Bit 2 = cloud shadow, Bit 3 = adjacent
+            is_cloud = (qa_arr & (1 << 1)) != 0
+            is_shadow = (qa_arr & (1 << 2)) != 0
+            is_adjacent = (qa_arr & (1 << 3)) != 0
+            clear_mask = ~(is_cloud | is_shadow | is_adjacent)
+        elif chosen_method == "landsat_c2":
+            # Landsat C2 QA_PIXEL: Bit 1 = dilated cloud, Bit 2 = cirrus, Bit 3 = cloud, Bit 4 = cloud shadow
+            is_dilated = (qa_arr & (1 << 1)) != 0
+            is_cirrus = (qa_arr & (1 << 2)) != 0
+            is_cloud = (qa_arr & (1 << 3)) != 0
+            is_shadow = (qa_arr & (1 << 4)) != 0
+            clear_mask = ~(is_dilated | is_cirrus | is_cloud | is_shadow)
+        elif chosen_method == "scl":
+            # Sentinel-2 SCL: 4 (vegetation), 5 (bare soil), 6 (water), 7 (unclassified)
+            clear_mask = np.isin(qa_arr, [4, 5, 6, 7])
+        else:
+            raise ValueError(f"Unknown QA masking method: '{method}'. Supported: 'auto', 'fmask', 'landsat_c2', 'scl'")
+
+        valid_mask = clear_mask if keep_clear else ~clear_mask
+        out_data = self._data.copy()
+        out_data[:, ~valid_mask] = np.nan
+        return self._clone(out_data)
+
     # -------------------------------------------------------------
     # Reprojection & Resampling
     # -------------------------------------------------------------
@@ -552,13 +705,11 @@ class Image(EarthObject):
                 dst_nodata=np.nan,
             )
 
-        return Image(
+        return self._clone(
             dst_data,
             transform=dst_transform,
             crs=target_crs,
-            band_names=self._band_names,
             nodata=np.nan,
-            metadata=dict(self._metadata),
         )
 
     def resample(self, scale_factor: float = 1.0, method: str = "bilinear") -> Image:
@@ -583,7 +734,7 @@ class Image(EarthObject):
                 resampling=resamp,
             )
 
-        return Image(dst_data, transform=new_transform, crs=self._crs, band_names=self._band_names)
+        return self._clone(dst_data, transform=new_transform, crs=self._crs, nodata=self._nodata)
 
     # -------------------------------------------------------------
     # Focal / Neighborhood Filters

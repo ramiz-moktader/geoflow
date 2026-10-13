@@ -96,3 +96,44 @@ def is_authenticated() -> bool:
     if hasattr(_SESSION, "authenticated"):
         return bool(_SESSION.authenticated)
     return bool(_SESSION.get("authenticated", False))
+
+
+def get_s3_credentials(daac: str = "LPDAAC") -> dict:
+    """
+    Retrieve temporary direct-access AWS S3 credentials for in-region NASA cloud DAACs (us-west-2).
+    Enables zero-egress, high-throughput streaming directly from NASA S3 buckets.
+
+    Parameters
+    ----------
+    daac : str, default 'LPDAAC'
+        NASA DAAC name (e.g. 'LPDAAC', 'NSIDC', 'PO.DAAC', 'GES_DISC', 'ORNL_DAAC', 'SEDAC').
+
+    Returns
+    -------
+    dict
+        Dictionary containing 'aws_access_key_id', 'aws_secret_access_key', 'aws_session_token', and 'expiration'.
+    """
+    try:
+        import earthaccess
+        return earthaccess.get_s3_credentials(daac=daac)
+    except ImportError:
+        pass
+    except Exception as e:
+        import warnings
+        warnings.warn(f"earthaccess.get_s3_credentials failed: {e}")
+
+    # Fallback to AWS environment variables if running in AWS us-west-2
+    ak = os.environ.get("AWS_ACCESS_KEY_ID")
+    sk = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    token = os.environ.get("AWS_SESSION_TOKEN")
+    if ak and sk:
+        return {
+            "aws_access_key_id": ak,
+            "aws_secret_access_key": sk,
+            "aws_session_token": token,
+        }
+
+    raise RuntimeError(
+        f"Unable to retrieve S3 credentials for DAAC '{daac}'. Ensure you are logged into NASA Earthdata "
+        f"(`geoflow.auth.login()`), have `earthaccess` installed, and/or are running in an AWS us-west-2 instance."
+    )

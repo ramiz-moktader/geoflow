@@ -87,6 +87,13 @@ def download(
         for g in granules:
             if isinstance(g, str):
                 urls.append(g)
+            elif hasattr(g, "data_links"):
+                try:
+                    dl = g.data_links()
+                    if dl:
+                        urls.extend(dl if isinstance(dl, list) else [dl])
+                except Exception:
+                    pass
             elif isinstance(g, dict):
                 # Check for direct download URL in granule entry
                 links = g.get("urls") or [l.get("href") for l in g.get("raw", {}).get("links", []) if "href" in l]

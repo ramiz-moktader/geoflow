@@ -75,24 +75,24 @@ def leakage_report(
     """
     Audit train and test partitions for spatial leakage.
     """
-    def extract_coords_and_bounds(obj):
+    def extract_coords_and_geometry(obj):
         if isinstance(obj, gpd.GeoDataFrame):
             coords = np.array([[g.centroid.x, g.centroid.y] for g in obj.geometry])
-            bounds = shapely.geometry.box(*obj.total_bounds)
+            geom = shapely.geometry.MultiPoint(coords).convex_hull if len(coords) >= 3 else (obj.unary_union if len(coords) > 0 else shapely.geometry.box(*obj.total_bounds))
         elif hasattr(obj, "gdf"):
             coords = np.array([[g.centroid.x, g.centroid.y] for g in obj.gdf.geometry])
-            bounds = shapely.geometry.box(*obj.gdf.total_bounds)
+            geom = shapely.geometry.MultiPoint(coords).convex_hull if len(coords) >= 3 else (obj.gdf.unary_union if len(coords) > 0 else shapely.geometry.box(*obj.gdf.total_bounds))
         elif hasattr(obj, "geometry"):
             coords = np.array([[obj.geometry.centroid.x, obj.geometry.centroid.y]])
-            bounds = obj.geometry.shapely
+            geom = obj.geometry.shapely
         else:
             raise TypeError(f"Cannot extract spatial geometry from {type(obj)}")
-        return coords, bounds
+        return coords, geom
 
-    train_coords, train_box = extract_coords_and_bounds(train)
-    test_coords, test_box = extract_coords_and_bounds(test)
+    train_coords, train_geom = extract_coords_and_geometry(train)
+    test_coords, test_geom = extract_coords_and_geometry(test)
 
-    has_overlap = train_box.intersects(test_box)
+    has_overlap = train_geom.intersects(test_geom)
 
     # Minimum distance between train and test using KDTree
     tree = scipy.spatial.KDTree(train_coords)

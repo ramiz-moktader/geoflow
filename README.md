@@ -263,6 +263,21 @@ GeoFlow goes beyond GEE by adding native spatial statistics, inferential testing
 
 ---
 
+## 📚 Documentation & Guides
+
+Comprehensive documentation and tutorials are available in the [`docs/`](docs/) directory:
+- **[End-to-End Master Tutorial](docs/user_guide/06_end_to_end_tutorial.md)**: Complete research workflow from raw NASA satellite data to spatial ML and publication cartography.
+- **[Detailed API Reference](docs/api_reference/core.md)**: Complete method signatures, parameter tables, and mathematical formulas for all modules.
+- **[Contributor & Architecture Guide](docs/contributing.md)**: Software architecture, `_clone()` pattern, CRS contract, testing conventions, and roadmap.
+
+To view the documentation locally:
+```bash
+pip install mkdocs-material
+mkdocs serve
+```
+
+---
+
 ## 📜 License
 
 Apache License 2.0. Built for scientific reproducibility and open geospatial research.

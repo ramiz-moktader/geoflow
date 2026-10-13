@@ -100,10 +100,24 @@ class BufferedSpatialCV:
         base_cv = SpatialCV(blocks=self.blocks or self.n_splits, n_splits=self.n_splits, random_state=self.random_state)
         sample_geoms = list(gdf.geometry)
 
+        # Detect if CRS is geographic and convert meters to degrees if needed
+        eff_buffer = self.buffer_distance
+        crs = getattr(gdf, "crs", None)
+        if crs and getattr(crs, "is_geographic", False) and eff_buffer >= 1.0:
+            import warnings
+            warnings.warn(
+                f"BufferedSpatialCV: Data CRS is geographic ({crs}). Converting buffer_distance "
+                f"{eff_buffer} meters to approximate degrees (~{eff_buffer / 111320.0:.6f}°). "
+                "For exact metric buffering, reproject data to a projected planar CRS.",
+                UserWarning,
+                stacklevel=2,
+            )
+            eff_buffer = eff_buffer / 111320.0
+
         for train_idx, val_idx in base_cv.split(gdf):
             # Create union of validation geometries and buffer it
             val_union = shapely.ops.unary_union([sample_geoms[i] for i in val_idx])
-            buffer_zone = val_union.buffer(self.buffer_distance)
+            buffer_zone = val_union.buffer(eff_buffer)
 
             # Drop training samples intersecting the buffer zone
             leak_free_train = []

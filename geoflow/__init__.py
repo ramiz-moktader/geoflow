@@ -7,7 +7,7 @@ Research Design, and Geospatial Machine Learning Framework.
 
 from __future__ import annotations
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 # Core abstractions
 from geoflow.core.filter import Filter
@@ -39,6 +39,8 @@ from geoflow.earthdata.downloader import download
 from geoflow.datasets.gedi import GEDI
 
 # Subpackages
+from geoflow import auth
+from geoflow import earthdata
 from geoflow import spatial
 from geoflow import validation
 from geoflow import ml
@@ -76,6 +78,8 @@ __all__ = [
     "search",
     "search_data",
     "download",
+    "auth",
+    "earthdata",
     "spatial",
     "validation",
     "ml",

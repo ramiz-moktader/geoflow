@@ -17,10 +17,30 @@ from geoflow.raster.image import Image
 class ImageCollection(EarthObject):
     """GEE-like ImageCollection holding multiple Image granules across space and time."""
 
-    def __init__(self, images: Optional[List[Image]] = None, dataset_name: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None):
+    def __init__(self, images: Optional[Union[List[Image], Any]] = None, dataset_name: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None):
+        if isinstance(images, (str, bytes)):
+            raise TypeError(
+                f"ImageCollection expects a list of Image objects, but received a string {images!r}. "
+                f"To load collections by dataset name or STAC, use `ImageCollection.from_earthdata(...)` "
+                f"or `ImageCollection.from_stac(...)`."
+            )
         super().__init__(metadata=metadata)
         self.dataset_name = dataset_name or "CustomCollection"
         self._images: List[Image] = list(images) if images is not None else []
+
+    def mask_clouds(self, qa_band: Optional[str] = None, method: str = "auto", keep_clear: bool = True) -> Any:
+        """Apply pixel QA cloud masking to every Image in the collection."""
+        return self.map(lambda img: img.mask_clouds(qa_band=qa_band, method=method, keep_clear=keep_clear))
+
+    def auto_scale(
+        self,
+        scale: Optional[float] = None,
+        offset: Optional[float] = None,
+        dataset: Optional[str] = None,
+        exclude_bands: Optional[List[str]] = None,
+    ) -> Any:
+        """Apply radiometric scaling and offset to every Image in the collection."""
+        return self.map(lambda img: img.auto_scale(scale=scale, offset=offset, dataset=dataset, exclude_bands=exclude_bands))
 
     def __len__(self) -> int:
         return len(self._images)
@@ -144,7 +164,7 @@ class ImageCollection(EarthObject):
         # Reduce across N (axis 0)
         reduced_arr = reducer.reduce(stack, axis=0)
 
-        return Image(
+        return ref._clone(
             reduced_arr,
             transform=ref.transform,
             crs=ref.crs,
@@ -174,22 +194,63 @@ class ImageCollection(EarthObject):
 
     def mosaic(self) -> Image:
         """
-        GEE-like mosaic: stitches overlapping images, with later images on top.
+        GEE-like mosaic: stitches overlapping images across space, with later images on top.
+        Seamlessly handles both identical grids and differing spatial extents.
         """
         if not self._images:
             raise ValueError("Cannot mosaic empty ImageCollection")
 
         ref = self._images[0]
-        # Composite last valid pixel on top
-        arrays = [img._data for img in self._images]
-        stack = np.stack(arrays, axis=0)
-        # Nan-safe last valid value
-        out = np.full_like(ref._data, np.nan)
-        for i in range(len(self._images)):
-            valid = ~np.isnan(arrays[i])
-            out[valid] = arrays[i][valid]
+        # Check if all images have identical transform and dimensions
+        identical_grid = all(
+            img.shape == ref.shape and img.transform == ref.transform and img.crs == ref.crs
+            for img in self._images
+        )
+        if identical_grid:
+            out = np.full_like(ref._data, np.nan)
+            for img in self._images:
+                valid = ~np.isnan(img._data)
+                out[valid] = img._data[valid]
+            return ref._clone(out)
 
-        return Image(out, transform=ref.transform, crs=ref.crs, band_names=ref.bands)
+        # Differing spatial extents: compute union bounding box in ref's CRS
+        from affine import Affine
+        from rasterio.warp import reproject, Resampling
+
+        min_x = min(img.bounds[0] for img in self._images)
+        min_y = min(img.bounds[1] for img in self._images)
+        max_x = max(img.bounds[2] for img in self._images)
+        max_y = max(img.bounds[3] for img in self._images)
+
+        res_x = abs(ref.transform.a)
+        res_y = abs(ref.transform.e)
+        out_w = max(1, int(np.round((max_x - min_x) / res_x)))
+        out_h = max(1, int(np.round((max_y - min_y) / res_y)))
+        dst_transform = Affine(res_x, 0.0, min_x, 0.0, -res_y, max_y)
+
+        dst_data = np.full((ref.count, out_h, out_w), np.nan, dtype=np.float32)
+
+        for img in self._images:
+            for b in range(min(ref.count, img.count)):
+                reproject(
+                    source=img._data[b],
+                    destination=dst_data[b],
+                    src_transform=img.transform,
+                    src_crs=img.crs.to_string(),
+                    dst_transform=dst_transform,
+                    dst_crs=ref.crs.to_string(),
+                    resampling=Resampling.nearest,
+                    src_nodata=img.nodata,
+                    dst_nodata=np.nan,
+                )
+
+        return ref._clone(
+            dst_data,
+            transform=dst_transform,
+            crs=ref.crs,
+            band_names=ref.bands,
+            nodata=np.nan,
+        )
 
     def qualityMosaic(self, quality_band: str) -> Image:
         """

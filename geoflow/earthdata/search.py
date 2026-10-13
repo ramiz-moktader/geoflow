@@ -109,3 +109,67 @@ def search(
     return granules
 
 search_data = search
+
+
+def search_collections(
+    query: Optional[str] = None,
+    keyword: Optional[str] = None,
+    limit: int = 20,
+    **kwargs: Any,
+) -> List[Dict[str, Any]]:
+    """
+    Search NASA CMR collections / datasets by title, short name, or science keyword.
+    """
+    search_term = query or keyword or ""
+    # Try earthaccess first
+    try:
+        import earthaccess
+        params = {"count": limit}
+        if search_term:
+            params["keyword"] = search_term
+        params.update(kwargs)
+        results = earthaccess.search_datasets(**params)
+        return results
+    except (ImportError, Exception):
+        pass
+
+    # Direct NASA CMR Collections search API
+    url = "https://cmr.earthdata.nasa.gov/search/collections.json"
+    params = {
+        "page_size": min(limit, 200),
+    }
+    if search_term:
+        params["keyword"] = search_term
+    params.update(kwargs)
+
+    resp = requests.get(url, params=params, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    entries = data.get("feed", {}).get("entry", [])
+    collections = []
+    for entry in entries:
+        collections.append({
+            "id": entry.get("id"),
+            "title": entry.get("title"),
+            "short_name": entry.get("short_name"),
+            "version_id": entry.get("version_id"),
+            "summary": entry.get("summary"),
+            "time_start": entry.get("time_start"),
+            "time_end": entry.get("time_end"),
+            "raw": entry,
+        })
+    return collections
+
+
+def open_granule(granule: Any, provider: Optional[str] = None) -> Any:
+    """
+    Stream a NASA Earthdata granule file directly into memory or return an open file-like object.
+    Uses earthaccess.open if installed.
+    """
+    try:
+        import earthaccess
+        return earthaccess.open(granule, provider=provider)
+    except (ImportError, Exception) as e:
+        raise RuntimeError(
+            f"open_granule requires `earthaccess` with active NASA credentials. Error: {e}"
+        )

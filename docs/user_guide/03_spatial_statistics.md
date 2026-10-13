@@ -17,7 +17,8 @@ import geoflow as gf
 gedi_features = gf.GEDI("L2A").filterBounds(aoi).to_geodataframe()
 
 moran = gf.spatial.morans_i(gedi_features, value="rh98", k=8)
-print(f"Moran's I: {moran.I:.4f}, p-value: {moran.p_sim:.4f}")
+print(f"Moran's I: {moran.I:.4f}, p-value: {moran.p_value:.4f}")
+print(moran.summary())
 ```
 
 ### Local Indicators of Spatial Association (LISA)
@@ -38,7 +39,9 @@ GeoFlow can calculate the **Spatial Effective Sample Size** to determine the *tr
 
 ```python
 ess = gf.stats.effective_sample_size(gedi_features, value="rh98")
-print(f"Nominal N: {len(gedi_features)}")
-print(f"Effective N: {ess}")
+print(f"Nominal N: {ess['nominal_n']}")
+print(f"Effective N: {ess['effective_n']}")
+print(f"Design Effect: {ess['design_effect']:.2f}")
+print(f"Pseudoreplication Alert: {ess['pseudoreplication_risk']}")
 ```
 You can use this reduced `N` when performing ANOVA or t-tests to avoid Type I errors.
