@@ -57,7 +57,13 @@ class GEDI(EarthObject):
             raise ValueError(f"No NASA GEDI granules found for {dataset_id}")
 
         downloaded_files = download(results, output_dir=output_dir)
-        gedi_obj = cls(level=level, files=downloaded_files)
+        h5_files = [str(f) for f in downloaded_files if str(f).lower().endswith((".h5", ".he5", ".hdf5"))]
+        if not h5_files:
+            raise RuntimeError(
+                f"Found {len(results)} {dataset_id} granules but no HDF5 files were downloaded. "
+                "Run `geoflow.login()` and check your NASA Earthdata credentials."
+            )
+        gedi_obj = cls(level=level, files=h5_files)
         if region is not None:
             gedi_obj = gedi_obj.filterBounds(region)
         if start and end:
@@ -94,15 +100,20 @@ class GEDI(EarthObject):
 
     def to_geodataframe(self) -> gpd.GeoDataFrame:
         """
-        Extract footprint shots into a GeoPandas GeoDataFrame.
-        If live H5 files are present, parses them via h5py with spatial and quality filters.
-        Otherwise, if bounds filter is provided, generates realistic footprints within AOI.
+        Extract footprint shots from the GEDI HDF5 files into a GeoPandas GeoDataFrame,
+        applying spatial and quality filters. Returns an empty GeoDataFrame if no shots
+        fall inside the filters.
         """
+        if not self.files:
+            raise ValueError(
+                "This GEDI object has no data files. Use GEDI.load(...) or pass files=[...]."
+            )
+        import h5py
+
         shots = []
-        if self.files:
+        read_errors = []
+        for f in self.files:
             try:
-                import h5py
-                for f in self.files:
                     with h5py.File(f, "r") as h5:
                         for beam in [k for k in h5.keys() if k.startswith("BEAM")]:
                             b_group = h5[beam]
@@ -166,50 +177,26 @@ class GEDI(EarthObject):
                                     "geometry": shapely.geometry.Point(float(val_lons[idx_in_sub]), float(val_lats[idx_in_sub])),
                                 }
                                 shots.append(rec)
-            except Exception:
-                pass
+            except Exception as e:
+                read_errors.append(f"{f}: {e}")
 
-        if not shots:
-            # Generate synthetic realistic GEDI footprints within AOI or default extent
-            bounds = (91.5, 22.0, 92.2, 22.6)
-            if self._bounds_filter:
-                b = self._bounds_filter.bounds
-                if hasattr(self._bounds_filter, "crs") and str(self._bounds_filter.crs) != "EPSG:4326":
-                    from geoflow.core.crs import reproject_bounds
-                    bounds = reproject_bounds(b, self._bounds_filter.crs, "EPSG:4326")
-                else:
-                    bounds = b
-            minx, miny, maxx, maxy = bounds
-            n_shots = 200
-            np.random.seed(42)
-            lons = np.random.uniform(minx, maxx, n_shots)
-            lats = np.random.uniform(miny, maxy, n_shots)
-            rh98_vals = np.random.gamma(shape=5.0, scale=4.0, size=n_shots)  # ~20m canopy height
-            rh100_vals = rh98_vals * 1.08
-            rh50_vals = rh98_vals * 0.55
-            sens_vals = np.random.uniform(0.92, 0.99, size=n_shots)
-            elev_vals = np.random.uniform(5.0, 150.0, size=n_shots)
+        if read_errors and len(read_errors) == len(self.files):
+            raise RuntimeError(
+                "Could not read any GEDI file (possibly corrupt or incomplete downloads). "
+                "First error: " + read_errors[0]
+            )
+        if read_errors:
+            import warnings
+            warnings.warn(f"Skipped {len(read_errors)} unreadable GEDI file(s): " + "; ".join(read_errors[:3]))
 
-            for i in range(n_shots):
-                pt = shapely.geometry.Point(lons[i], lats[i])
-                if self._bounds_filter and not self._bounds_filter.contains(pt):
-                    continue
-                shots.append({
-                    "shot_number": 1000000 + i,
-                    "beam": "BEAM0101",
-                    "latitude": lats[i],
-                    "longitude": lons[i],
-                    "elevation": elev_vals[i],
-                    "quality_flag": 1,
-                    "sensitivity": sens_vals[i],
-                    "rh50": rh50_vals[i],
-                    "rh98": rh98_vals[i],
-                    "rh100": rh100_vals[i],
-                    "agbd": rh98_vals[i] * 3.2,
-                    "geometry": pt,
-                })
-
-        gdf = gpd.GeoDataFrame(shots, crs="EPSG:4326")
+        columns = [
+            "shot_number", "beam", "latitude", "longitude", "elevation", "quality_flag",
+            "sensitivity", "rh50", "rh98", "rh100", "agbd", "geometry",
+        ]
+        gdf = gpd.GeoDataFrame(shots, columns=columns, geometry="geometry", crs="EPSG:4326")
+        if gdf.empty:
+            import warnings
+            warnings.warn("No GEDI shots matched the region/quality filters.")
         # Keep selected variables
         keep_cols = ["geometry", "latitude", "longitude"] + [v for v in self._selected_variables if v in gdf.columns]
         return gdf[keep_cols]

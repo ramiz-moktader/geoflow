@@ -9,26 +9,69 @@ from typing import Optional
 _SESSION = None
 
 
+def _earthaccess_logged_in() -> bool:
+    """True if earthaccess is installed and holds an authenticated session."""
+    try:
+        import earthaccess
+    except ImportError:
+        return False
+    auth = getattr(earthaccess, "__auth__", None)
+    store = getattr(earthaccess, "__store__", None)
+    return bool(store is not None and getattr(auth, "authenticated", False))
+
+
+def ensure_earthaccess_login() -> bool:
+    """
+    Make sure earthaccess is authenticated, without prompting.
+    Uses EARTHDATA_USERNAME/EARTHDATA_PASSWORD or ~/.netrc.
+    Returns False if earthaccess is not installed or no credentials are available.
+    """
+    global _SESSION
+    try:
+        import earthaccess
+    except ImportError:
+        return False
+    if _earthaccess_logged_in():
+        return True
+    for strategy in ("environment", "netrc"):
+        try:
+            auth = earthaccess.login(strategy=strategy, persist=False)
+            if getattr(auth, "authenticated", False):
+                _SESSION = auth
+                return True
+        except Exception:
+            continue
+    return False
+
+
 def login(strategy: str = "interactive", persist: bool = True) -> bool:
     """
     Authenticate with NASA Earthdata.
     Uses earthaccess if available, otherwise falls back to environment variables, .netrc, or interactive prompt.
     """
     global _SESSION
-    if is_authenticated():
+    try:
+        import earthaccess  # noqa: F401
+        has_earthaccess = True
+    except ImportError:
+        has_earthaccess = False
+
+    if is_authenticated() and (not has_earthaccess or _earthaccess_logged_in()):
         return True
 
-    # 1. Try earthaccess backend
-    try:
-        import earthaccess
-        auth = earthaccess.login(strategy=strategy, persist=persist)
-        _SESSION = auth
-        return bool(getattr(auth, "authenticated", False))
-    except ImportError:
-        pass
-    except Exception as e:
-        import warnings
-        warnings.warn(f"earthaccess login failed: {e}")
+    # 1. earthaccess backend: try stored credentials first, then the requested strategy
+    if has_earthaccess:
+        if ensure_earthaccess_login():
+            return True
+        try:
+            import earthaccess
+            auth = earthaccess.login(strategy=strategy, persist=persist)
+            if getattr(auth, "authenticated", False):
+                _SESSION = auth
+                return True
+        except Exception as e:
+            import warnings
+            warnings.warn(f"earthaccess login failed: {e}")
 
     # 2. Check environment variables
     user = os.environ.get("EARTHDATA_USERNAME")
@@ -72,6 +115,7 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
             _SESSION = {"username": username, "authenticated": True}
             os.environ["EARTHDATA_USERNAME"] = username
             os.environ["EARTHDATA_PASSWORD"] = password
+            ensure_earthaccess_login()
             print("Successfully authenticated with NASA Earthdata!")
             return True
 
@@ -95,7 +139,9 @@ def is_authenticated() -> bool:
         return False
     if hasattr(_SESSION, "authenticated"):
         return bool(_SESSION.authenticated)
-    return bool(_SESSION.get("authenticated", False))
+    if isinstance(_SESSION, dict):
+        return bool(_SESSION.get("authenticated", False))
+    return False
 
 
 def get_s3_credentials(daac: str = "LPDAAC") -> dict:
