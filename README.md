@@ -10,6 +10,14 @@ GeoFlow is currently available directly from GitHub. You can install it using `p
 pip install git+https://github.com/ramiz-moktader/geoflow.git
 ```
 
+For the optional `earthaccess` backend (direct S3 streaming, `open_granule`):
+
+```bash
+pip install "geoflow[earthdata] @ git+https://github.com/ramiz-moktader/geoflow.git"
+```
+
+Without it, search, download and login still work via the NASA CMR API and `.netrc`/environment credentials.
+
 ## Quick Look
 
 

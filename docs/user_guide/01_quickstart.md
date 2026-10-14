@@ -6,6 +6,9 @@ Welcome to GeoFlow! This guide will get you up and running with the core concept
 
 ```bash
 pip install git+https://github.com/ramiz-moktader/geoflow.git
+
+# Optional: earthaccess backend (S3 streaming, open_granule)
+pip install "geoflow[earthdata] @ git+https://github.com/ramiz-moktader/geoflow.git"
 ```
 
 ## First Steps

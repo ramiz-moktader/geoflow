@@ -168,8 +168,14 @@ def open_granule(granule: Any, provider: Optional[str] = None) -> Any:
     """
     try:
         import earthaccess
+    except ImportError:
+        raise ImportError(
+            "open_granule requires the optional `earthaccess` dependency. "
+            "Install it with: pip install \"geoflow[earthdata]\""
+        ) from None
+    try:
         return earthaccess.open(granule, provider=provider)
-    except (ImportError, Exception) as e:
+    except Exception as e:
         raise RuntimeError(
-            f"open_granule requires `earthaccess` with active NASA credentials. Error: {e}"
-        )
+            f"open_granule failed. Ensure you are logged in via `geoflow.auth.login()`. Error: {e}"
+        ) from e
