@@ -17,3 +17,8 @@ site/
 # Extraneous files
 gh.zip
 gh_cli/
+
+# Packaging build output
+*.egg-info/
+build/
+dist/

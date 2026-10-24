@@ -2,21 +2,42 @@
 
 > **A Google Earth Engine-like Earth Observation, GIS, Spatial Statistics, and Geospatial ML Framework in Python.**
 
+[![Tests](https://github.com/ramiz-moktader/geoflow/actions/workflows/tests.yml/badge.svg)](https://github.com/ramiz-moktader/geoflow/actions/workflows/tests.yml)
+[![Docs](https://github.com/ramiz-moktader/geoflow/actions/workflows/docs.yml/badge.svg)](https://ramiz-moktader.github.io/geoflow/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+📖 **Documentation: <https://ramiz-moktader.github.io/geoflow/>**
+
 ## Installation
 
-GeoFlow is currently available directly from GitHub. You can install it using `pip`:
+GeoFlow requires Python 3.10 or newer and is currently installed directly from GitHub:
 
 ```bash
 pip install git+https://github.com/ramiz-moktader/geoflow.git
 ```
 
-For the optional `earthaccess` backend (direct S3 streaming, `open_granule`):
+Optional extras add more features. Install everything with `[all]`, or pick what you need:
 
 ```bash
-pip install "geoflow[earthdata] @ git+https://github.com/ramiz-moktader/geoflow.git"
+pip install "geoflow[all] @ git+https://github.com/ramiz-moktader/geoflow.git"
 ```
 
-Without it, search, download and login still work via the NASA CMR API and `.netrc`/environment credentials.
+| Extra | Adds | In `[all]` |
+|---|---|---|
+| `viz` | Interactive maps and plotting (folium, seaborn, plotly) | ✅ |
+| `stats` | PySAL-based spatial statistics (libpysal, esda, statsmodels) | ✅ |
+| `stac` | STAC catalogs and Planetary Computer (pystac-client, odc-stac) | ✅ |
+| `ml` | Deep learning (PyTorch) | ✅ |
+| `notebook` | Jupyter widgets, including the interactive layout editor | ✅ |
+| `earthdata` | `earthaccess` backend (direct S3 streaming, `open_granule`) | ❌ install separately |
+
+Without `earthdata`, NASA search, download and login still work through the CMR API and `.netrc`/environment credentials. NASA data needs a free [Earthdata account](https://urs.earthdata.nasa.gov/users/new).
+
+> **Google Colab:** use the plain install (or pick only the extras you need) and avoid `earthdata`. `earthaccess` upgrades `fsspec`, which conflicts with Colab's preinstalled `gcsfs`. If pip says "You must restart the runtime", use **Runtime → Restart session** before importing GeoFlow.
+>
+> ```python
+> !pip install -q git+https://github.com/ramiz-moktader/geoflow.git
+> ```
 
 ## Quick Look
 
@@ -63,12 +84,6 @@ Google Earth Engine revolutionized cloud-based remote sensing with its declarati
 ---
 
 ## 🚀 Quickstart
-
-### Installation
-
-```bash
-pip install -e .
-```
 
 ### Complete End-to-End Workflow
 
@@ -273,14 +288,14 @@ GeoFlow goes beyond GEE by adding native spatial statistics, inferential testing
 
 ## 📚 Documentation & Guides
 
-Comprehensive documentation and tutorials are available in the [`docs/`](docs/) directory:
+The full documentation site is at **<https://ramiz-moktader.github.io/geoflow/>**. The same pages are in the [`docs/`](docs/) directory:
 - **[End-to-End Master Tutorial](docs/user_guide/06_end_to_end_tutorial.md)**: Complete research workflow from raw NASA satellite data to spatial ML and publication cartography.
 - **[Detailed API Reference](docs/api_reference/core.md)**: Complete method signatures, parameter tables, and mathematical formulas for all modules.
 - **[Contributor & Architecture Guide](docs/contributing.md)**: Software architecture, `_clone()` pattern, CRS contract, testing conventions, and roadmap.
 
-To view the documentation locally:
+To preview the documentation locally from a clone of the repository:
 ```bash
-pip install mkdocs-material
+pip install -e ".[docs]"
 mkdocs serve
 ```
 

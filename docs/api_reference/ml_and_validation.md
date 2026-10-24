@@ -5,8 +5,8 @@ Geospatial machine learning models frequently suffer from severe over-optimistic
 | Module | Source Files | Purpose |
 |---|---|---|
 | [`geoflow.validation`](#validation-geoflowvalidation) | `spatial_cv.py`, `leakage.py`, `diagnostics.py` | Spatial blocked CV, buffered exclusion zones, leakage audits, and residual Moran's I diagnostics |
-| [`geoflow.ml`](#machine-learning--patch-datasets-geoflowml) | `datasets.py` | Geospatial patch extraction for CNNs, ViTs, PyTorch `DataLoader`, and NumPy pipelines |
-| [`geoflow.sampling`](#sampling-designs--bias-diagnostics-geoflowsampling) | `spatial_sampling.py` | Stratified point sampling, minimum distance dispersion, and Clark-Evans clustering reports |
+| [`geoflow.ml`](#machine-learning-patch-datasets-geoflowml) | `datasets.py` | Geospatial patch extraction for CNNs, ViTs, PyTorch `DataLoader`, and NumPy pipelines |
+| [`geoflow.sampling`](#sampling-designs-bias-diagnostics-geoflowsampling) | `spatial_sampling.py` | Stratified point sampling, minimum distance dispersion, and Clark-Evans clustering reports |
 
 ---
 

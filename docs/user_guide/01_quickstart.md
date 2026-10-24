@@ -4,12 +4,26 @@ Welcome to GeoFlow! This guide will get you up and running with the core concept
 
 ## Installation
 
+GeoFlow requires Python 3.10 or newer.
+
 ```bash
 pip install git+https://github.com/ramiz-moktader/geoflow.git
 
-# Optional: earthaccess backend (S3 streaming, open_granule)
+# Optional: interactive maps, PySAL statistics, STAC, PyTorch and notebook widgets
+pip install "geoflow[all] @ git+https://github.com/ramiz-moktader/geoflow.git"
+
+# Optional: earthaccess backend (S3 streaming, open_granule); not part of [all]
 pip install "geoflow[earthdata] @ git+https://github.com/ramiz-moktader/geoflow.git"
 ```
+
+NASA data (GEDI, Earthdata search and downloads) needs a free [Earthdata account](https://urs.earthdata.nasa.gov/users/new). Log in once with `gf.login()`.
+
+!!! tip "Google Colab"
+    Use the plain install and skip `earthdata`: `earthaccess` upgrades `fsspec`, which conflicts with Colab's preinstalled `gcsfs`. If pip asks you to restart the runtime, use **Runtime → Restart session** before `import geoflow`.
+
+    ```python
+    !pip install -q git+https://github.com/ramiz-moktader/geoflow.git
+    ```
 
 ## First Steps
 

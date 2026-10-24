@@ -5,7 +5,7 @@ GeoFlow provides first-class spatial econometrics, geostatistics, and research d
 | Module | Source Files | Purpose |
 |---|---|---|
 | [`geoflow.spatial`](#spatial-statistics-geoflowspatial) | `autocorrelation.py`, `local_stats.py`, `weights.py`, `blocks.py`, `variogram.py` | Spatial weights, Moran's I, LISA clusters, spatial blocking, and semivariograms |
-| [`geoflow.stats`](#statistical-inference--ess-geoflowstats) | `inference.py` | Spatial Effective Sample Size, hypothesis testing with spatial warnings, and power analysis |
+| [`geoflow.stats`](#statistical-inference-ess-geoflowstats) | `inference.py` | Spatial Effective Sample Size, hypothesis testing with spatial warnings, and power analysis |
 
 ---
 
