@@ -72,11 +72,8 @@ def reproject_bounds(
         return bounds
 
     transformer = Transformer.from_crs(src, dst, always_xy=True)
-    minx, miny, maxx, maxy = bounds
-    xs = [minx, maxx, minx, maxx]
-    ys = [miny, miny, maxy, maxy]
-    tx, ty = transformer.transform(xs, ys)
-    return (min(tx), min(ty), max(tx), max(ty))
+    # Densify the edges so curved edges in the target CRS are fully enclosed (corners alone are not enough)
+    return tuple(transformer.transform_bounds(*bounds, densify_pts=21))
 
 
 def check_crs_compatibility(crs1: Union[str, CRS], crs2: Union[str, CRS], context: str = ""):

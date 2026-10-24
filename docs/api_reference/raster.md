@@ -44,7 +44,7 @@ Wraps multi-band raster data. Inherits from [`EarthObject`](core.md#earthobject)
 | `.width` | `int` | Width in pixels (columns). |
 | `.transform` | `rasterio.Affine` | Affine geotransform matrix mapping pixel coordinates to CRS space. |
 | `.crs` | `CRS` | Coordinate Reference System wrapper. |
-| `.nodata` | `float` | Nodata value (defaults to `np.nan` if unset). |
+| `.nodata` | `float` | Always `np.nan`: nodata values (and dataset masks) are converted to NaN when an image is loaded or created with `nodata=`. |
 | `.bounds` | `tuple[float, float, float, float]` | Spatial extent as `(minx, miny, maxx, maxy)`. |
 | `.geometry` | `Geometry` | Bounding rectangle geometry in the image's CRS. |
 
@@ -153,7 +153,7 @@ Applicable to single-band Digital Elevation Models:
 
 | Method | Returns | Description |
 |---|---|---|
-| `.slope()` | `Image` | Terrain slope in degrees ($0^\circ - 90^\circ$). |
+| `.slope()` | `Image` | Terrain slope in degrees ($0^\circ - 90^\circ$). Pixel sizes of geographic-CRS DEMs are converted from degrees to metres per row latitude. |
 | `.aspect()` | `Image` | Terrain aspect in degrees ($0^\circ - 360^\circ$ clockwise from North). |
 | `.hillshade(azimuth=315.0, elevation=45.0)` | `Image` | 8-bit shaded relief illumination array ($0 - 255$). |
 

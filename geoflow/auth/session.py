@@ -7,6 +7,25 @@ import os
 from typing import Optional
 
 _SESSION = None
+_CREDENTIALS: Optional[tuple] = None  # (username, password) entered interactively; kept in memory only
+
+
+def get_credentials() -> tuple:
+    """Return (username, password) from an interactive login or EARTHDATA_* env vars, else (None, None)."""
+    if _CREDENTIALS:
+        return _CREDENTIALS
+    return os.environ.get("EARTHDATA_USERNAME"), os.environ.get("EARTHDATA_PASSWORD")
+
+
+def _write_netrc(netrc_path, username: str, password: str):
+    """Write the Earthdata entry to ~/.netrc, replacing any existing urs.earthdata.nasa.gov line."""
+    lines = []
+    if netrc_path.exists():
+        lines = [l for l in netrc_path.read_text().splitlines() if "machine urs.earthdata.nasa.gov" not in l]
+    lines.append(f"machine urs.earthdata.nasa.gov login {username} password {password}")
+    netrc_path.write_text("\n".join(lines) + "\n")
+    if os.name != "nt":
+        os.chmod(netrc_path, 0o600)
 
 
 def _earthaccess_logged_in() -> bool:
@@ -49,7 +68,7 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
     Authenticate with NASA Earthdata.
     Uses earthaccess if available, otherwise falls back to environment variables, .netrc, or interactive prompt.
     """
-    global _SESSION
+    global _SESSION, _CREDENTIALS
     try:
         import earthaccess  # noqa: F401
         has_earthaccess = True
@@ -105,17 +124,24 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
         if username and password:
             if persist:
                 try:
-                    mode = "a" if netrc_path.exists() else "w"
-                    with open(netrc_path, mode) as f:
-                        f.write(f"\nmachine urs.earthdata.nasa.gov login {username} password {password}\n")
-                    if os.name != "nt":
-                        os.chmod(netrc_path, 0o600)
-                except Exception:
-                    pass
+                    _write_netrc(netrc_path, username, password)
+                except Exception as e:
+                    import warnings
+                    warnings.warn(f"Could not save credentials to {netrc_path}: {e}")
             _SESSION = {"username": username, "authenticated": True}
+            _CREDENTIALS = (username, password)
+            # earthaccess's 'environment' strategy reads env vars: expose them only for that call
+            saved = {k: os.environ.get(k) for k in ("EARTHDATA_USERNAME", "EARTHDATA_PASSWORD")}
             os.environ["EARTHDATA_USERNAME"] = username
             os.environ["EARTHDATA_PASSWORD"] = password
-            ensure_earthaccess_login()
+            try:
+                ensure_earthaccess_login()
+            finally:
+                for k, v in saved.items():
+                    if v is None:
+                        os.environ.pop(k, None)
+                    else:
+                        os.environ[k] = v
             print("Successfully authenticated with NASA Earthdata!")
             return True
 
@@ -123,9 +149,10 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
 
 
 def logout():
-    """Clear active Earthdata session."""
-    global _SESSION
+    """Clear active Earthdata session and in-memory credentials."""
+    global _SESSION, _CREDENTIALS
     _SESSION = None
+    _CREDENTIALS = None
 
 
 def get_session():

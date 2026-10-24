@@ -6,6 +6,7 @@ Provides KNN, distance-band, and grid-based neighborhood weights with row standa
 from __future__ import annotations
 from typing import Any, List, Optional, Tuple, Union
 import numpy as np
+import scipy.sparse
 import scipy.spatial
 import geopandas as gpd
 import shapely.geometry
@@ -29,12 +30,18 @@ class SpatialWeights:
                 new_w[i] = {}
         return SpatialWeights(new_w, self.n)
 
-    def to_dense(self) -> np.ndarray:
-        w_mat = np.zeros((self.n, self.n), dtype=np.float64)
+    def to_sparse(self) -> scipy.sparse.csr_matrix:
+        """Weights as an (n, n) CSR sparse matrix (memory scales with the number of neighbour pairs)."""
+        rows, cols, vals = [], [], []
         for i, neighbors in self.weights.items():
             for j, val in neighbors.items():
-                w_mat[i, j] = val
-        return w_mat
+                rows.append(i)
+                cols.append(j)
+                vals.append(val)
+        return scipy.sparse.csr_matrix((vals, (rows, cols)), shape=(self.n, self.n), dtype=np.float64)
+
+    def to_dense(self) -> np.ndarray:
+        return self.to_sparse().toarray()
 
 
 def _extract_xy(data: Any) -> np.ndarray:

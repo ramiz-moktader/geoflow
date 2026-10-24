@@ -22,22 +22,24 @@ def local_morans_i(
     Compute Local Indicators of Spatial Association (LISA / Local Moran's I).
     Returns GeoDataFrame with columns ['value', 'I', 'z_score', 'p_value', 'cluster'] (HH, HL, LH, LL, not significant).
     """
+    from geoflow.spatial.autocorrelation import _values
+
     if isinstance(data, gpd.GeoDataFrame):
         base_gdf = data.copy()
-        y = data[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-        val_name = value if isinstance(value, str) else "value"
     elif hasattr(data, "gdf"):
         base_gdf = data.gdf.copy()
-        y = base_gdf[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-        val_name = value if isinstance(value, str) else "value"
     else:
         raise TypeError("local_morans_i expects GeoDataFrame or FeatureCollection")
+    y = _values(base_gdf, value)
+    val_name = value if isinstance(value, str) else "value"
 
     n = len(y)
+    if n < 3:
+        raise ValueError("Local Moran's I requires at least 3 spatial observations")
     if weights is None:
         weights = knn(base_gdf, k=k)
 
-    w_mat = weights.to_dense()
+    w_mat = weights.to_sparse()
 
     # Standardized deviations
     y_mean = np.mean(y)
@@ -51,19 +53,20 @@ def local_morans_i(
         return base_gdf
 
     # Spatial lag: W * z
-    spatial_lag = np.dot(w_mat, z)
+    spatial_lag = w_mat @ z
 
     # Local Moran's I_i: (z_i / s^2) * sum_j w_ij * z_j
     I_local = (z / s2) * spatial_lag
 
-    # Analytical expectation and variance for local Moran
-    expected_local = -w_mat.sum(axis=1) / (n - 1)
-
-    # Permutation-based or analytical z-score
-    # Analytical approximation of variance
-    w_sq = np.sum(w_mat**2, axis=1)
+    # Analytical expectation and variance under randomization (Anselin 1995, eq. 13-14)
+    w_row = np.asarray(w_mat.sum(axis=1)).ravel()
+    expected_local = -w_row / (n - 1)
+    w_sq = np.asarray(w_mat.power(2).sum(axis=1)).ravel()  # w_i(2)
+    w_kh = w_row**2 - w_sq                                 # 2 * w_i(kh) = sum_{k!=h} w_ik w_ih
     b2 = (np.sum(z**4) / n) / (s2**2)
-    var_local = ((n - b2) / (n - 1)) * w_sq - (expected_local**2)
+    var_local = (w_sq * (n - b2) / (n - 1)
+                 + w_kh * (2 * b2 - n) / ((n - 1) * (n - 2))
+                 - expected_local**2)
     var_local = np.maximum(var_local, 1e-10)
 
     z_scores = (I_local - expected_local) / np.sqrt(var_local)

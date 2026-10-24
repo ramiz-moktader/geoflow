@@ -32,32 +32,39 @@ def check_disk_space(target_dir: Path, min_free_mb: int = 500):
 URS_HOST = "urs.earthdata.nasa.gov"
 
 
+def _is_urs(url: str) -> bool:
+    parsed = requests.utils.urlparse(url)
+    return parsed.scheme == "https" and parsed.hostname == URS_HOST
+
+
 class EarthdataSession(requests.Session):
     """
-    requests.Session that keeps Earthdata credentials across the redirect to
-    urs.earthdata.nasa.gov (requests normally strips auth on cross-host redirects).
+    requests.Session for Earthdata downloads. Credentials are only ever sent to
+    https://urs.earthdata.nasa.gov (the login host data servers redirect to), never to
+    the data hosts themselves or to any other link found in granule metadata.
+    Without explicit credentials, requests' ~/.netrc lookup applies per host.
     """
 
     def __init__(self, username: Optional[str] = None, password: Optional[str] = None):
         super().__init__()
-        if username and password:
-            self.auth = (username, password)
+        self._urs_auth = requests.auth.HTTPBasicAuth(username, password) if username and password else None
+
+    def prepare_request(self, request):
+        prepared = super().prepare_request(request)
+        if self._urs_auth is not None and _is_urs(prepared.url):
+            prepared.prepare_auth(self._urs_auth)
+        return prepared
 
     def rebuild_auth(self, prepared_request, response):
-        headers = prepared_request.headers
-        url = prepared_request.url
-        if "Authorization" in headers:
-            original = requests.utils.urlparse(response.request.url).hostname
-            redirect = requests.utils.urlparse(url).hostname
-            if original != redirect and redirect != URS_HOST and original != URS_HOST:
-                del headers["Authorization"]
-        elif self.auth is None:
-            super().rebuild_auth(prepared_request, response)  # falls back to ~/.netrc
+        # Strips Authorization on cross-host redirects and re-applies ~/.netrc for the new host
+        super().rebuild_auth(prepared_request, response)
+        if self._urs_auth is not None and _is_urs(prepared_request.url):
+            prepared_request.prepare_auth(self._urs_auth)
 
 
 def _make_session() -> requests.Session:
-    user = os.environ.get("EARTHDATA_USERNAME")
-    pw = os.environ.get("EARTHDATA_PASSWORD")
+    from geoflow.auth.session import get_credentials
+    user, pw = get_credentials()
     return EarthdataSession(user, pw)
 
 

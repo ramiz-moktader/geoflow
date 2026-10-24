@@ -45,7 +45,8 @@ cv = gf.validation.BufferedSpatialCV(
     buffer_distance: float = 1000.0,
     n_splits: int = 5,
     blocks: FeatureCollection | gpd.GeoDataFrame | None = None,
-    random_state: int = 42
+    random_state: int = 42,
+    unit: str = "meters"   # or "crs" to buffer in the data's own CRS units
 )
 ```
 
@@ -65,7 +66,7 @@ for train_idx, val_idx in cv.split(samples_gdf):
 ```
 
 !!! important "Coordinate Units Notice"
-    `buffer_distance` is applied directly in the dataset's CRS units. If your dataset is in geographic degrees (`EPSG:4326`), a `buffer_distance=1000.0` represents 1,000 degrees and will erase your entire training partition! Always ensure your points are projected into a metric CRS (e.g. UTM) before using metric buffer distances.
+    With the default `unit="meters"`, `buffer_distance` is in metres. Data in a geographic CRS (e.g. `EPSG:4326`) is projected to its local UTM zone for buffering, so the buffer is correct at any latitude. Pass `unit="crs"` to buffer in the dataset's own CRS units instead.
 
 ---
 
@@ -75,15 +76,17 @@ for train_idx, val_idx in cv.split(samples_gdf):
 report = gf.validation.leakage_report(
     train: Any,
     test: Any,
-    buffer_threshold: float = 0.0
+    buffer_threshold: float = 0.0,
+    unit: str = "meters"
 ) -> LeakageReport
 ```
 
-Audits two partitions (training vs validation, or train vs test) for topological and proximity violations.
+Audits two partitions (training vs validation, or train vs test) for duplicate locations and proximity violations. Distances are in metres (geographic data is projected to its local UTM zone); pass `unit="crs"` for CRS units. Set `buffer_threshold` to the range of spatial autocorrelation: with the default `0.0` proximity is not checked.
 
 #### `LeakageReport`
-- `.has_leakage` (`bool`): `True` if any leakage criterion is triggered.
-- `.has_overlap` (`bool`): Bounding boxes of train and test intersect.
+- `.has_leakage` (`bool`): `True` if duplicate locations exist or `min_distance < buffer_threshold`.
+- `.has_overlap` (`bool`): Convex hulls of train and test intersect. Informational only: interleaved spatial blocks always overlap at hull level without leaking.
+- `.proximity_checked` (`bool`): `True` when a `buffer_threshold > 0` was given.
 - `.duplicate_count` (`int`): Count of samples sharing identical coordinates ($< 10^{-7}$ separation).
 - `.min_distance` (`float`): Euclidean distance between closest train and test sample points.
 - `.buffer_violation` (`bool`): `True` if `min_distance < buffer_threshold`.
@@ -143,7 +146,9 @@ Extracts 2D/3D spatial image patches from multi-band rasters, tracking georefere
 
 #### Methods
 - `.to_geodataframe() -> gpd.GeoDataFrame`: Returns polygon footprint geometries for each patch.
-- `.split(strategy="spatial", blocks=None, buffer_distance=0.0, ratios=(0.7, 0.15, 0.15))`: Splits patch dataset into `(train_ds, val_ds, test_ds)` using spatial blocking.
+- `.split(strategy="spatial", blocks=None, buffer_distance=0.0, ratios=(0.7, 0.15, 0.15), block_size=None, random_state=42)`: Splits the patch dataset into `(train_ds, val_ds, test_ds)`.
+  - `strategy="spatial"` assigns whole blocks to a subset: the given `blocks` polygons, or square blocks of `block_size` pixels (default `2 * patch_size`). `strategy="random"` assigns individual patches.
+  - With either strategy, train patches whose pixel window overlaps (or lies within `buffer_distance` CRS units of) a val/test patch are dropped, and val patches overlapping test patches are dropped, so subsets never share pixels even when `stride < patch_size`. A warning is issued if more than 25% of patches are dropped.
 - `.dataloader(batch_size=32, shuffle=True, device="cpu")`:
   - If **PyTorch** is installed, returns a native `torch.utils.data.DataLoader` yielding float32 tensors with pinned memory.
   - If PyTorch is not installed, returns a pure **NumPy** batch iterator yielding stacked mini-batch arrays.

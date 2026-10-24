@@ -67,21 +67,19 @@ def block(
             x += size
 
     elif shape.lower() == "hexagonal":
-        # Regular hexagon horizontal spacing = 1.5 * radius, vertical = sqrt(3) * radius
+        # Pointy-top hexagons of width `size` (flat-to-flat): circumradius R = size / sqrt(3),
+        # centres sqrt(3)*R apart within a row, rows 1.5*R apart, odd rows offset by sqrt(3)/2*R.
         radius = size / math.sqrt(3)
-        w = size
-        h = 2 * radius
-        x_step = 1.5 * radius
-        y_step = math.sqrt(3) * radius
+        col_step = math.sqrt(3) * radius
+        row_step = 1.5 * radius
+        angles = [math.radians(a) for a in range(30, 390, 60)]
 
         row = 0
-        y = miny
-        while y < maxy + y_step:
-            x_offset = (math.sqrt(3) / 2.0 * radius) if (row % 2 == 1) else 0.0
-            x = minx + x_offset
-            while x < maxx + x_step:
-                # 6 vertices
-                angles = [math.radians(a) for a in range(0, 360, 60)]
+        y = miny - row_step
+        while y < maxy + row_step:
+            x_offset = (col_step / 2.0) if (row % 2 == 1) else 0.0
+            x = minx - col_step + x_offset
+            while x < maxx + col_step:
                 hex_pts = [(x + radius * math.cos(a), y + radius * math.sin(a)) for a in angles]
                 poly = shapely.geometry.Polygon(hex_pts)
                 if poly.intersects(working_geom.shapely):
@@ -90,8 +88,8 @@ def block(
                         "geometry": poly,
                     })
                     block_id += 1
-                x += y_step
-            y += x_step
+                x += col_step
+            y += row_step
             row += 1
     else:
         raise ValueError(f"Unsupported block shape: {shape}. Choose 'square', 'grid', or 'hexagonal'.")

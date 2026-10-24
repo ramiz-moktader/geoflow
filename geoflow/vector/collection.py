@@ -99,7 +99,9 @@ class FeatureCollection(EarthObject):
         return self.__class__(self._gdf[mask].copy(), crs=self.crs)
 
     def filterBounds(self, geometry: Union[Geometry, Any]) -> Any:
-        """Filter features that spatially intersect geometry."""
+        """Filter features that spatially intersect geometry. A Geometry in another CRS is reprojected first."""
+        if isinstance(geometry, Geometry) and geometry.crs != self.crs:
+            geometry = geometry.reproject(self.crs)
         geom_shapely = geometry.to_shapely() if hasattr(geometry, "to_shapely") else geometry
         filtered_gdf = self._gdf[self._gdf.intersects(geom_shapely)].copy()
         return self.__class__(filtered_gdf, crs=self.crs)

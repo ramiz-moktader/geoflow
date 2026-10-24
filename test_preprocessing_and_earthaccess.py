@@ -214,6 +214,7 @@ def test_leakage_report_convex_hull():
     assert not report.has_leakage
 
 
+@pytest.mark.network
 def test_earthdata_search_collections():
     cols = gf.earthdata.search_collections(keyword="GEDI", limit=2)
     assert isinstance(cols, list)

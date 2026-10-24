@@ -6,7 +6,46 @@ Provides rich declarative filtering across metadata, geometries, dates, and prop
 from __future__ import annotations
 from typing import Any, Callable, List, Union
 import datetime
+import numpy as np
+import pandas as pd
 from shapely.geometry.base import BaseGeometry
+
+
+def _parse_date(value: Any) -> datetime.date | None:
+    """
+    Parse a date-like value to a calendar date (UTC for timezone-aware inputs).
+    Accepts date/datetime/pandas/numpy datetimes and strings in ISO 8601 ('2023-01-31',
+    '2023-01-31T10:00:00Z'), compact 'YYYYMMDD', or ordinal 'YYYYDDD' (as in HLS granule
+    names, e.g. '2023001T042149'). Returns None if the value cannot be parsed.
+    """
+    if value is None:
+        return None
+    if isinstance(value, np.datetime64):
+        value = pd.Timestamp(value).to_pydatetime()
+    if isinstance(value, datetime.datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(datetime.timezone.utc)
+        return value.date()
+    if isinstance(value, datetime.date):
+        return value
+    if not isinstance(value, str):
+        return None
+
+    s = value.strip()
+    try:
+        dt = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return _parse_date(dt)
+    except ValueError:
+        pass
+    day = s.split("T")[0].split(" ")[0]
+    for fmt in ("%Y-%m-%d", "%Y%m%d", "%Y%j"):
+        if fmt == "%Y%m%d" and len(day) != 8 or fmt == "%Y%j" and len(day) != 7:
+            continue
+        try:
+            return datetime.datetime.strptime(day, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 class Filter:
@@ -40,7 +79,8 @@ class Filter:
     # -------------------------------------------------------------
     @staticmethod
     def _extract_val(item: Any, name: str) -> Any:
-        if isinstance(item, dict):
+        if isinstance(item, (dict, pd.Series)):
+            # Series rows: index lookup, never attribute access (row.name / row.count are pandas members)
             return item.get(name)
         if hasattr(item, "properties") and isinstance(item.properties, dict):
             return item.properties.get(name)
@@ -126,18 +166,11 @@ class Filter:
 
     @classmethod
     def date(cls, start: Union[str, datetime.date, datetime.datetime], end: Union[str, datetime.date, datetime.datetime]) -> Filter:
-        """Filter items by temporal window."""
-        def parse_dt(d):
-            if isinstance(d, datetime.datetime):
-                return d
-            if isinstance(d, datetime.date):
-                return datetime.datetime.combine(d, datetime.time.min)
-            if isinstance(d, str):
-                return datetime.datetime.fromisoformat(d.replace("Z", "+00:00").split("T")[0])
-            return None
-
-        dt_start = parse_dt(start)
-        dt_end = parse_dt(end)
+        """Filter items by temporal window [start, end], inclusive, compared at day granularity."""
+        dt_start = _parse_date(start)
+        dt_end = _parse_date(end)
+        if start is not None and dt_start is None or end is not None and dt_end is None:
+            raise ValueError(f"Could not parse date window [{start!r}, {end!r}]")
 
         def _pred(item):
             # check date or timestamp or datetime in item
@@ -149,9 +182,9 @@ class Filter:
             )
             if raw is None:
                 return True
-            dt_item = parse_dt(raw)
+            dt_item = _parse_date(raw)
             if dt_item is None:
-                return True
+                return False
             if dt_start and dt_item < dt_start:
                 return False
             if dt_end and dt_item > dt_end:
@@ -171,12 +204,9 @@ class Filter:
             )
             if raw is None:
                 return True
-            if isinstance(raw, str):
-                dt = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00").split("T")[0])
-            elif isinstance(raw, (datetime.date, datetime.datetime)):
-                dt = raw
-            else:
-                return True
+            dt = _parse_date(raw)
+            if dt is None:
+                return False
 
             val = dt.month if field.lower() == "month" else dt.timetuple().tm_yday
             if start <= end:

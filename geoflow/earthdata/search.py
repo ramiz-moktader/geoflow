@@ -4,7 +4,8 @@ Provides high-level search across GEDI, Sentinel, Landsat, MODIS, and other coll
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
 import datetime
 import requests
 
@@ -62,14 +63,18 @@ def search(
             temporal = (start or "1970-01-01", end or datetime.date.today().isoformat())
             params["temporal"] = temporal
         if cloud_cover is not None:
-            params["cloud_cover"] = cloud_cover
-            
+            params["cloud_cover"] = tuple(cloud_cover) if isinstance(cloud_cover, (tuple, list)) else (0, cloud_cover)
+
         params.update(kwargs)
 
-        results = earthaccess.search_data(**params)
-        return results
-    except (ImportError, Exception):
-        pass
+        return earthaccess.search_data(**params)
+    except ImportError:
+        pass  # earthaccess not installed: use the CMR REST API directly
+    except Exception as e:
+        warnings.warn(
+            f"earthaccess search failed ({e}); falling back to the CMR API, which returns plain dicts "
+            "instead of earthaccess DataGranule objects."
+        )
 
     # Direct NASA CMR Search API query
     url = "https://cmr.earthdata.nasa.gov/search/granules.json"
@@ -88,7 +93,8 @@ def search(
         params["temporal"] = f"{s_str},{e_str}"
 
     if cloud_cover is not None:
-        params["cloud_cover"] = f"0,{cloud_cover}"
+        lo, hi = cloud_cover if isinstance(cloud_cover, (tuple, list)) else (0, cloud_cover)
+        params["cloud_cover"] = f"{lo},{hi}"
 
     resp = requests.get(url, params=params, timeout=30)
     resp.raise_for_status()
@@ -128,10 +134,11 @@ def search_collections(
         if search_term:
             params["keyword"] = search_term
         params.update(kwargs)
-        results = earthaccess.search_datasets(**params)
-        return results
-    except (ImportError, Exception):
-        pass
+        return earthaccess.search_datasets(**params)
+    except ImportError:
+        pass  # earthaccess not installed: use the CMR REST API directly
+    except Exception as e:
+        warnings.warn(f"earthaccess collection search failed ({e}); falling back to the CMR API.")
 
     # Direct NASA CMR Collections search API
     url = "https://cmr.earthdata.nasa.gov/search/collections.json"
