@@ -58,9 +58,12 @@ def effective_sample_size(
     geometry: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
-    Compute Effective Sample Size (ESS) adjusting for spatial autocorrelation.
-    Prevents false certainty and pseudoreplication in remote sensing studies.
-    N_eff = N * (1 - rho) / (1 + rho)
+    Approximate Effective Sample Size (ESS) adjusting for spatial autocorrelation.
+    Flags likely pseudoreplication in remote sensing studies.
+
+    Heuristic: N_eff = N * (1 - rho) / (1 + rho), the AR(1) formula with Global Moran's I
+    (8-nearest-neighbour weights) used as rho. Treat it as a screening indicator, not an exact
+    correction; use spatial regression, blocked permutation tests or block bootstrap for inference.
     """
     if isinstance(data, gpd.GeoDataFrame):
         gdf = data
@@ -69,6 +72,7 @@ def effective_sample_size(
     else:
         raise TypeError("effective_sample_size requires GeoDataFrame or FeatureCollection")
 
+    gdf = gdf.dropna(subset=[value])
     n = len(gdf)
     moran = morans_i(gdf, value=value)
     rho = max(0.0, min(0.99, moran.I))  # Positive autocorrelation dampens effective N
@@ -97,15 +101,23 @@ def test(
     """
     Perform two-sample or multi-sample hypothesis tests with effect sizes and spatial warnings.
     """
+    if method not in (None, "welch", "t", "ttest", "mann_whitney", "mwu", "anova"):
+        raise ValueError(f"Unknown method {method!r}; use 'welch' (default), 'mann_whitney' or 'anova'.")
     gdf = data.gdf if hasattr(data, "gdf") else data
+    gdf = gdf.dropna(subset=[value, group])
     groups = gdf[group].unique()
+    if len(groups) < 2:
+        raise ValueError(f"Need at least 2 groups in '{group}', found {len(groups)}")
 
-    if len(groups) == 2:
-        g1_data = gdf[gdf[group] == groups[0]][value].dropna().to_numpy()
-        g2_data = gdf[gdf[group] == groups[1]][value].dropna().to_numpy()
+    if len(groups) == 2 and method != "anova":
+        g1_data = gdf[gdf[group] == groups[0]][value].to_numpy()
+        g2_data = gdf[gdf[group] == groups[1]][value].to_numpy()
 
-        # Check spatial autocorrelation
-        ess1 = effective_sample_size(gdf, value=value)
+        # Check spatial autocorrelation of the residuals (value minus group mean), so that the
+        # group effect being tested is not itself mistaken for pseudoreplication
+        resid_gdf = gdf.copy()
+        resid_gdf["_gf_resid"] = gdf[value] - gdf.groupby(group)[value].transform("mean")
+        ess1 = effective_sample_size(resid_gdf, value="_gf_resid")
         spatial_warn = None
         if ess1["pseudoreplication_risk"]:
             spatial_warn = (
@@ -117,8 +129,9 @@ def test(
 
         if method in ("mann_whitney", "mwu"):
             stat, p = scipy.stats.mannwhitneyu(g1_data, g2_data)
-            # Rank-biserial correlation
-            r = 1.0 - (2.0 * stat) / (len(g1_data) * len(g2_data))
+            # Rank-biserial correlation; positive when group 1 tends to be larger (same sign as Cohen's d).
+            # scipy returns U for the first sample.
+            r = (2.0 * stat) / (len(g1_data) * len(g2_data)) - 1.0
             return StatTestResult("Mann-Whitney U", stat, p, r, "rank_biserial", (0.0, 0.0), {str(groups[0]): len(g1_data), str(groups[1]): len(g2_data)}, spatial_warn)
         else:
             # Welch's t-test (default)

@@ -12,7 +12,6 @@ import geopandas as gpd
 from geoflow.raster.image import Image
 from geoflow.geometry.base import Geometry
 from geoflow.vector.collection import FeatureCollection
-from geoflow.validation.spatial_cv import SpatialCV, BufferedSpatialCV
 
 
 class PatchDataset:
@@ -109,31 +108,93 @@ class PatchDataset:
         blocks: Optional[Any] = None,
         buffer_distance: float = 0.0,
         ratios: Tuple[float, float, float] = (0.7, 0.15, 0.15),
+        block_size: Optional[int] = None,
+        random_state: int = 42,
     ) -> Tuple[PatchDataset, PatchDataset, PatchDataset]:
         """
-        Split PatchDataset into train, val, test subsets using spatial blocking.
-        """
-        gdf = self.to_geodataframe()
-        n = len(gdf)
+        Split PatchDataset into train, val and test subsets without spatial leakage.
 
-        if strategy == "spatial" and blocks is not None:
-            cv = BufferedSpatialCV(buffer_distance=buffer_distance, blocks=blocks, n_splits=5)
-            # Pick first fold for test, second fold for val, rest for train
-            train_idx, test_idx = next(cv.split(gdf))
-            # Split val out of train
-            n_val = int(len(train_idx) * (ratios[1] / (ratios[0] + ratios[1])))
-            val_idx = train_idx[:n_val]
-            train_idx = train_idx[n_val:]
+        strategy='spatial' (default) assigns whole spatial blocks to a subset: the given `blocks`
+        polygons, or else square blocks of `block_size` pixels (default 2 x patch_size).
+        strategy='random' assigns individual patches at random.
+
+        With either strategy, train patches whose pixel window overlaps (or lies within
+        `buffer_distance`, in CRS units, of) any val/test patch are dropped, and val patches
+        overlapping test patches are dropped, so no pixel is shared between subsets even when
+        stride < patch_size.
+        """
+        n = len(self.patches)
+        if n == 0:
+            raise ValueError("Cannot split an empty PatchDataset")
+        if len(ratios) != 3 or min(ratios) < 0 or sum(ratios) <= 0:
+            raise ValueError(f"ratios must be three non-negative numbers, got {ratios}")
+        rng = np.random.RandomState(random_state)
+        P = self.patch_size
+        rows = np.array([p["row"] for p in self.patches])
+        cols = np.array([p["col"] for p in self.patches])
+        fractions = np.asarray(ratios, dtype=float) / float(sum(ratios))
+
+        if strategy == "spatial":
+            if blocks is not None:
+                from geoflow.validation.spatial_cv import assign_blocks
+                blocks_gdf = blocks.gdf if hasattr(blocks, "gdf") else blocks
+                group_ids = assign_blocks(self.to_geodataframe(), blocks_gdf)
+            else:
+                bs = int(block_size or 2 * P)
+                group_ids = (rows // bs) * (int(cols.max()) // bs + 1) + (cols // bs)
+        elif strategy == "random":
+            group_ids = np.arange(n)
         else:
-            # Geographic coordinate split
-            indices = np.arange(n)
-            np.random.seed(42)
-            np.random.shuffle(indices)
-            n_train = int(n * ratios[0])
-            n_val = int(n * ratios[1])
-            train_idx = indices[:n_train]
-            val_idx = indices[n_train : n_train + n_val]
-            test_idx = indices[n_train + n_val :]
+            raise ValueError(f"Unknown split strategy {strategy!r}; use 'spatial' or 'random'.")
+
+        # Assign groups (blocks or single patches) to train/val/test by the requested ratios,
+        # giving every subset with a non-zero ratio at least one group when possible
+        unique_groups = np.unique(group_ids)
+        rng.shuffle(unique_groups)
+        n_groups = len(unique_groups)
+        counts = np.floor(fractions * n_groups).astype(int)
+        if n_groups >= np.count_nonzero(fractions):
+            counts[(fractions > 0) & (counts == 0)] = 1
+        while counts.sum() > n_groups:
+            counts[np.argmax(counts)] -= 1
+        counts[np.argmax(fractions)] += n_groups - counts.sum()
+        cut = np.cumsum(counts)
+        group_split = {g: 0 if i < cut[0] else (1 if i < cut[1] else 2) for i, g in enumerate(unique_groups)}
+        split_of = np.array([group_split[g] for g in group_ids])
+
+        # Purge pixel overlap (plus buffer) from earlier subsets: train vs val+test, val vs test
+        buf_px = int(np.ceil(buffer_distance / abs(self.image.transform.a))) if buffer_distance > 0 else 0
+        reach = P + buf_px
+
+        def purge(keep_mask, against_mask):
+            keep_idx = np.where(keep_mask)[0]
+            other_idx = np.where(against_mask)[0]
+            if len(keep_idx) == 0 or len(other_idx) == 0:
+                return keep_idx
+            conflict = np.zeros(len(keep_idx), dtype=bool)
+            for start in range(0, len(other_idx), 1024):
+                o = other_idx[start:start + 1024]
+                close = (np.abs(rows[keep_idx, None] - rows[None, o]) < reach) & \
+                        (np.abs(cols[keep_idx, None] - cols[None, o]) < reach)
+                conflict |= close.any(axis=1)
+            return keep_idx[~conflict]
+
+        test_idx = np.where(split_of == 2)[0]
+        val_idx = purge(split_of == 1, split_of == 2)
+        held_out = np.zeros(n, dtype=bool)
+        held_out[test_idx] = True
+        held_out[val_idx] = True
+        train_idx = purge(split_of == 0, held_out)
+
+        dropped = n - len(train_idx) - len(val_idx) - len(test_idx)
+        if dropped > 0.25 * n:
+            import warnings
+            warnings.warn(
+                f"PatchDataset.split dropped {dropped} of {n} patches that overlapped another subset. "
+                "Use strategy='spatial' with larger blocks, or stride >= patch_size, to keep more patches.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         def subset(idxs):
             ds = PatchDataset(

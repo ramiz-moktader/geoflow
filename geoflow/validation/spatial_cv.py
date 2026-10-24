@@ -5,12 +5,40 @@ Prevents spatial autocorrelation data leakage between training and validation sp
 
 from __future__ import annotations
 from typing import Any, Iterator, List, Optional, Tuple, Union
+import warnings
 import numpy as np
 import geopandas as gpd
 import shapely.geometry
 
 from geoflow.vector.collection import FeatureCollection
 from geoflow.geometry.base import Geometry
+
+
+def assign_blocks(samples: gpd.GeoDataFrame, blocks: gpd.GeoDataFrame) -> np.ndarray:
+    """
+    Return one block id per sample (in sample order). Samples are matched by their centroid,
+    so each lands in exactly one block; samples outside every block go to the nearest block.
+    Blocks are identified by their 'block_id' column, or by row position if it is absent.
+    """
+    if samples.crs is not None and blocks.crs is not None and samples.crs != blocks.crs:
+        blocks = blocks.to_crs(samples.crs)
+    ids = blocks["block_id"].to_numpy() if "block_id" in blocks.columns else np.arange(len(blocks))
+    blk = gpd.GeoDataFrame({"_gf_block": ids}, geometry=blocks.geometry.to_numpy(), crs=blocks.crs)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)  # centroid in a geographic CRS is fine for block assignment
+        centroids = samples.geometry.centroid.to_numpy()
+    pts = gpd.GeoDataFrame({"_gf_pos": np.arange(len(samples))}, geometry=centroids, crs=samples.crs)
+
+    joined = gpd.sjoin(pts, blk, how="left", predicate="intersects")
+    joined = joined.drop_duplicates("_gf_pos").set_index("_gf_pos").sort_index()
+    block_ids = joined["_gf_block"].to_numpy(dtype=float).copy()
+
+    missing = np.isnan(block_ids)
+    if missing.any():
+        nearest = gpd.sjoin_nearest(pts[missing], blk, how="left")
+        nearest = nearest.drop_duplicates("_gf_pos").set_index("_gf_pos")
+        block_ids[nearest.index.to_numpy()] = nearest["_gf_block"].to_numpy(dtype=float)
+    return block_ids
 
 
 class SpatialCV:
@@ -36,11 +64,7 @@ class SpatialCV:
 
             if isinstance(self.blocks, (FeatureCollection, gpd.GeoDataFrame)):
                 blocks_gdf = self.blocks.gdf if hasattr(self.blocks, "gdf") else self.blocks
-                # Spatial join to find which block each sample falls into
-                joined = gpd.sjoin(gdf, blocks_gdf, how="left", predicate="intersects")
-                # Handle possible multiple intersections by picking first
-                joined = joined[~joined.index.duplicated(keep="first")]
-                block_ids = joined["block_id"].fillna(0).to_numpy()
+                block_ids = assign_blocks(gdf, blocks_gdf)
             else:
                 # Assign to k spatial clusters using KMeans on coordinates
                 from sklearn.cluster import KMeans
@@ -52,6 +76,11 @@ class SpatialCV:
             block_ids = np.arange(n_samples) % self.n_splits
 
         unique_blocks = np.unique(block_ids)
+        if len(unique_blocks) < self.n_splits:
+            raise ValueError(
+                f"Only {len(unique_blocks)} spatial blocks contain samples, fewer than n_splits={self.n_splits}. "
+                "Use smaller blocks or fewer splits."
+            )
         if self.shuffle:
             rng.shuffle(unique_blocks)
 
@@ -82,11 +111,19 @@ class BufferedSpatialCV:
         n_splits: int = 5,
         blocks: Optional[Union[FeatureCollection, gpd.GeoDataFrame]] = None,
         random_state: int = 42,
+        unit: str = "meters",
     ):
+        """
+        unit: 'meters' (default) buffers in metres; data in a geographic CRS is projected to its
+              local UTM zone for buffering. 'crs' buffers in the data's own CRS units.
+        """
+        if unit.lower() not in ("meters", "metres", "m", "crs"):
+            raise ValueError(f"Unsupported unit {unit!r}; use 'meters' or 'crs'.")
         self.buffer_distance = buffer_distance
         self.n_splits = n_splits
         self.blocks = blocks
         self.random_state = random_state
+        self.unit = unit.lower()
 
     def split(self, data: Any, y: Any = None, groups: Any = None) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
         """
@@ -94,35 +131,19 @@ class BufferedSpatialCV:
         within buffer_distance of any sample in val_indices.
         """
         gdf = data.gdf if hasattr(data, "gdf") else data
-        n_samples = len(gdf)
 
-        # Base spatial CV
-        base_cv = SpatialCV(blocks=self.blocks or self.n_splits, n_splits=self.n_splits, random_state=self.random_state)
-        sample_geoms = list(gdf.geometry)
+        # Base spatial CV (blocks are assigned in the data's own CRS)
+        base_cv = SpatialCV(blocks=self.blocks if self.blocks is not None else self.n_splits,
+                            n_splits=self.n_splits, random_state=self.random_state)
 
-        # Detect if CRS is geographic and convert meters to degrees if needed
-        eff_buffer = self.buffer_distance
-        crs = getattr(gdf, "crs", None)
-        if crs and getattr(crs, "is_geographic", False) and eff_buffer >= 1.0:
-            import warnings
-            warnings.warn(
-                f"BufferedSpatialCV: Data CRS is geographic ({crs}). Converting buffer_distance "
-                f"{eff_buffer} meters to approximate degrees (~{eff_buffer / 111320.0:.6f}°). "
-                "For exact metric buffering, reproject data to a projected planar CRS.",
-                UserWarning,
-                stacklevel=2,
-            )
-            eff_buffer = eff_buffer / 111320.0
+        # Buffer in metres: project geographic data to its local UTM zone
+        geoms = gdf.geometry
+        if self.unit != "crs" and gdf.crs is not None and gdf.crs.is_geographic:
+            geoms = geoms.to_crs(gdf.estimate_utm_crs())
+        geoms = geoms.reset_index(drop=True)
 
         for train_idx, val_idx in base_cv.split(gdf):
-            # Create union of validation geometries and buffer it
-            val_union = shapely.ops.unary_union([sample_geoms[i] for i in val_idx])
-            buffer_zone = val_union.buffer(eff_buffer)
-
+            buffer_zone = geoms.iloc[val_idx].union_all().buffer(self.buffer_distance)
             # Drop training samples intersecting the buffer zone
-            leak_free_train = []
-            for idx in train_idx:
-                if not sample_geoms[idx].intersects(buffer_zone):
-                    leak_free_train.append(idx)
-
-            yield np.array(leak_free_train, dtype=int), val_idx
+            keep = ~geoms.iloc[train_idx].intersects(buffer_zone).to_numpy()
+            yield np.asarray(train_idx)[keep].astype(int), val_idx

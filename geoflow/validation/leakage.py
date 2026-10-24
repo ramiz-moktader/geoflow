@@ -34,7 +34,12 @@ class LeakageReport:
 
     @property
     def has_leakage(self) -> bool:
-        return self.has_overlap or (self.duplicate_count > 0) or self.buffer_violation
+        # Hull overlap alone is not leakage: interleaved spatial blocks always overlap at hull level
+        return (self.duplicate_count > 0) or self.buffer_violation
+
+    @property
+    def proximity_checked(self) -> bool:
+        return self.buffer_threshold > 0
 
     def summary(self) -> str:
         status = "CRITICAL LEAKAGE DETECTED" if self.has_leakage else "CLEAN: NO LEAKAGE DETECTED"
@@ -45,11 +50,11 @@ class LeakageReport:
             f"Status                 : {status}\n"
             f"Train Sample Count     : {self.train_count}\n"
             f"Test Sample Count      : {self.test_count}\n"
-            f"Bounding Box Overlap   : {'YES (Risk of leakage)' if self.has_overlap else 'NO'}\n"
+            f"Convex Hull Overlap    : {'YES (informational)' if self.has_overlap else 'NO'}\n"
             f"Duplicate Coordinates  : {self.duplicate_count}\n"
-            f"Minimum Separation     : {self.min_distance:.2f} units\n"
-            f"Buffer Threshold       : {self.buffer_threshold:.2f} units\n"
-            f"Buffer Proximity Alert : {'VIOLATION' if self.buffer_violation else 'PASS'}\n"
+            f"Minimum Separation     : {self.min_distance:.2f}\n"
+            f"Buffer Threshold       : {self.buffer_threshold:.2f}\n"
+            f"Buffer Proximity Alert : {('VIOLATION' if self.buffer_violation else 'PASS') if self.proximity_checked else 'NOT CHECKED'}\n"
             f"--------------------------------------------------\n"
         )
         if self.has_leakage:
@@ -58,8 +63,13 @@ class LeakageReport:
                 "Use `geoflow.validation.BufferedSpatialCV` with an exclusion buffer\n"
                 "exceeding the range of spatial autocorrelation to eliminate inflated validation metrics.\n"
             )
+        elif not self.proximity_checked:
+            report_str += (
+                "RECOMMENDATION:\nNo duplicates found, but proximity was not assessed. Set buffer_threshold to\n"
+                "the range of spatial autocorrelation (e.g. from geoflow.spatial.variogram) to check separation.\n"
+            )
         else:
-            report_str += "RECOMMENDATION:\nValidation partition is isolated. Safe for spatial generalization claims.\n"
+            report_str += "RECOMMENDATION:\nNo train/test pair is closer than the buffer threshold.\n"
         report_str += "=================================================="
         return report_str
 
@@ -71,26 +81,49 @@ def leakage_report(
     train: Any,
     test: Any,
     buffer_threshold: float = 0.0,
+    unit: str = "meters",
 ) -> LeakageReport:
     """
     Audit train and test partitions for spatial leakage.
-    """
-    def extract_coords_and_geometry(obj):
-        if isinstance(obj, gpd.GeoDataFrame):
-            coords = np.array([[g.centroid.x, g.centroid.y] for g in obj.geometry])
-            geom = shapely.geometry.MultiPoint(coords).convex_hull if len(coords) >= 3 else (obj.unary_union if len(coords) > 0 else shapely.geometry.box(*obj.total_bounds))
-        elif hasattr(obj, "gdf"):
-            coords = np.array([[g.centroid.x, g.centroid.y] for g in obj.gdf.geometry])
-            geom = shapely.geometry.MultiPoint(coords).convex_hull if len(coords) >= 3 else (obj.gdf.unary_union if len(coords) > 0 else shapely.geometry.box(*obj.gdf.total_bounds))
-        elif hasattr(obj, "geometry"):
-            coords = np.array([[obj.geometry.centroid.x, obj.geometry.centroid.y]])
-            geom = obj.geometry.shapely
-        else:
-            raise TypeError(f"Cannot extract spatial geometry from {type(obj)}")
-        return coords, geom
 
-    train_coords, train_geom = extract_coords_and_geometry(train)
-    test_coords, test_geom = extract_coords_and_geometry(test)
+    Leakage is flagged for duplicate locations, or for train/test pairs closer than
+    buffer_threshold. Convex-hull overlap is reported for information only: interleaved
+    spatial blocks always overlap at the hull level without leaking.
+
+    unit: 'meters' (default) measures distances in metres, projecting geographic data to its
+          local UTM zone; 'crs' uses the data's own CRS units.
+    """
+    def to_gdf(obj):
+        if isinstance(obj, gpd.GeoDataFrame):
+            return obj
+        if hasattr(obj, "gdf"):
+            return obj.gdf
+        if hasattr(obj, "geometry"):
+            geom = obj.geometry
+            crs = getattr(geom, "crs", None)
+            return gpd.GeoDataFrame(
+                geometry=[geom.shapely if hasattr(geom, "shapely") else geom],
+                crs=crs.to_string() if hasattr(crs, "to_string") else crs,
+            )
+        raise TypeError(f"Cannot extract spatial geometry from {type(obj)}")
+
+    train_gdf, test_gdf = to_gdf(train), to_gdf(test)
+    if train_gdf.crs is not None and test_gdf.crs is not None and train_gdf.crs != test_gdf.crs:
+        test_gdf = test_gdf.to_crs(train_gdf.crs)
+    if unit.lower() != "crs" and train_gdf.crs is not None and train_gdf.crs.is_geographic:
+        utm = train_gdf.estimate_utm_crs()
+        train_gdf, test_gdf = train_gdf.to_crs(utm), test_gdf.to_crs(utm)
+
+    def coords_and_hull(gdf):
+        coords = np.array([[g.centroid.x, g.centroid.y] for g in gdf.geometry])
+        if len(coords) >= 3:
+            hull = shapely.geometry.MultiPoint(coords).convex_hull
+        else:
+            hull = gdf.union_all()
+        return coords, hull
+
+    train_coords, train_geom = coords_and_hull(train_gdf)
+    test_coords, test_geom = coords_and_hull(test_gdf)
 
     has_overlap = train_geom.intersects(test_geom)
 

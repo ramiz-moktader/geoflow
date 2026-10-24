@@ -143,33 +143,87 @@ class ImageCollection(EarthObject):
     # -------------------------------------------------------------
     # GEE-Style Compositing & Reducers
     # -------------------------------------------------------------
+    def _common_grid(self):
+        """
+        Return (transform, width, height) of the grid shared by all images.
+        If every image already sits on the first image's grid, that grid is reused; otherwise the
+        grid covers the union of all image extents in the first image's CRS at its resolution.
+        """
+        from affine import Affine
+        from geoflow.core.crs import reproject_bounds
+
+        ref = self._images[0]
+        if all(img.shape[1:] == ref.shape[1:] and img.transform == ref.transform and img.crs == ref.crs
+               for img in self._images):
+            return ref.transform, ref.width, ref.height
+
+        all_bounds = [reproject_bounds(img.bounds, img.crs, ref.crs) for img in self._images]
+        min_x = min(b[0] for b in all_bounds)
+        min_y = min(b[1] for b in all_bounds)
+        max_x = max(b[2] for b in all_bounds)
+        max_y = max(b[3] for b in all_bounds)
+        res_x = abs(ref.transform.a)
+        res_y = abs(ref.transform.e)
+        width = max(1, int(np.ceil((max_x - min_x) / res_x - 1e-9)))
+        height = max(1, int(np.ceil((max_y - min_y) / res_y - 1e-9)))
+        return Affine(res_x, 0.0, min_x, 0.0, -res_y, max_y), width, height
+
+    def _aligned_arrays(self, resampling: str = "nearest"):
+        """Warp every image onto the common grid. Returns (list of (B, H, W) arrays, transform)."""
+        from rasterio.warp import reproject, Resampling
+
+        ref = self._images[0]
+        dst_transform, width, height = self._common_grid()
+        resamp = getattr(Resampling, resampling)
+        arrays = []
+        for img in self._images:
+            if img.shape[1:] == (height, width) and img.transform == dst_transform and img.crs == ref.crs:
+                arrays.append(img._data)
+                continue
+            # Each image gets its own fresh destination, so no warp overwrites another image's pixels
+            out = np.full((img.count, height, width), np.nan, dtype=np.float32)
+            for b in range(img.count):
+                reproject(
+                    source=img._data[b],
+                    destination=out[b],
+                    src_transform=img.transform,
+                    src_crs=img.crs.to_string(),
+                    dst_transform=dst_transform,
+                    dst_crs=ref.crs.to_string(),
+                    resampling=resamp,
+                    src_nodata=np.nan,
+                    dst_nodata=np.nan,
+                )
+            arrays.append(out)
+        return arrays, dst_transform
+
     def _reduce_stack(self, reducer: Reducer) -> Image:
-        """Stack compatible images along time axis and apply reducer."""
+        """Align images on a common grid, stack them along time and apply the reducer."""
         if not self._images:
             raise ValueError("Cannot reduce empty ImageCollection")
 
         ref = self._images[0]
-        # Align/resample if dimensions differ
-        arrays = []
-        for img in self._images:
-            if (img.height, img.width) != (ref.height, ref.width):
-                # Simple resize match to reference
-                resampled = img.resample(ref.width / img.width)
-                arrays.append(resampled._data)
-            else:
-                arrays.append(img._data)
+        if any(img.count != ref.count for img in self._images):
+            raise ValueError(
+                f"Cannot composite images with different band counts: {sorted({img.count for img in self._images})}. "
+                "Use .select([...]) to choose common bands first."
+            )
+        arrays, dst_transform = self._aligned_arrays()
 
         # Shape: (N, Bands, H, W)
         stack = np.stack(arrays, axis=0)
-        # Reduce across N (axis 0)
-        reduced_arr = reducer.reduce(stack, axis=0)
+        # Reduce across N (axis 0); pixels with no valid observation stay NaN
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            reduced_arr = reducer.reduce(stack, axis=0)
 
         return ref._clone(
-            reduced_arr,
-            transform=ref.transform,
+            np.asarray(reduced_arr, dtype=np.float32),
+            transform=dst_transform,
             crs=ref.crs,
             band_names=ref.bands,
-            nodata=ref.nodata,
+            nodata=np.nan,
         )
 
     def mean(self) -> Image:
@@ -201,48 +255,12 @@ class ImageCollection(EarthObject):
             raise ValueError("Cannot mosaic empty ImageCollection")
 
         ref = self._images[0]
-        # Check if all images have identical transform and dimensions
-        identical_grid = all(
-            img.shape == ref.shape and img.transform == ref.transform and img.crs == ref.crs
-            for img in self._images
-        )
-        if identical_grid:
-            out = np.full_like(ref._data, np.nan)
-            for img in self._images:
-                valid = ~np.isnan(img._data)
-                out[valid] = img._data[valid]
-            return ref._clone(out)
-
-        # Differing spatial extents: compute union bounding box in ref's CRS
-        from affine import Affine
-        from rasterio.warp import reproject, Resampling
-
-        min_x = min(img.bounds[0] for img in self._images)
-        min_y = min(img.bounds[1] for img in self._images)
-        max_x = max(img.bounds[2] for img in self._images)
-        max_y = max(img.bounds[3] for img in self._images)
-
-        res_x = abs(ref.transform.a)
-        res_y = abs(ref.transform.e)
-        out_w = max(1, int(np.round((max_x - min_x) / res_x)))
-        out_h = max(1, int(np.round((max_y - min_y) / res_y)))
-        dst_transform = Affine(res_x, 0.0, min_x, 0.0, -res_y, max_y)
-
-        dst_data = np.full((ref.count, out_h, out_w), np.nan, dtype=np.float32)
-
-        for img in self._images:
-            for b in range(min(ref.count, img.count)):
-                reproject(
-                    source=img._data[b],
-                    destination=dst_data[b],
-                    src_transform=img.transform,
-                    src_crs=img.crs.to_string(),
-                    dst_transform=dst_transform,
-                    dst_crs=ref.crs.to_string(),
-                    resampling=Resampling.nearest,
-                    src_nodata=img.nodata,
-                    dst_nodata=np.nan,
-                )
+        arrays, dst_transform = self._aligned_arrays()
+        dst_data = np.full((ref.count,) + arrays[0].shape[1:], np.nan, dtype=np.float32)
+        for arr in arrays:
+            n = min(ref.count, arr.shape[0])
+            valid = ~np.isnan(arr[:n])
+            dst_data[:n][valid] = arr[:n][valid]
 
         return ref._clone(
             dst_data,
@@ -263,16 +281,20 @@ class ImageCollection(EarthObject):
         if quality_band not in ref.bands:
             raise KeyError(f"Quality band '{quality_band}' not found in image bands: {ref.bands}")
 
+        if any(img.bands != ref.bands for img in self._images):
+            raise ValueError("qualityMosaic requires every image to have the same bands in the same order.")
+
         q_idx = ref.bands.index(quality_band)
-        q_stack = np.stack([img._data[q_idx] for img in self._images], axis=0)  # (N, H, W)
-        best_indices = np.nanargmax(q_stack, axis=0)  # (H, W)
+        arrays, dst_transform = self._aligned_arrays()
+        stack = np.stack(arrays, axis=0)  # (N, B, H, W)
+        q_stack = stack[:, q_idx]  # (N, H, W)
+        no_data = np.all(np.isnan(q_stack), axis=0)  # pixels with no valid quality value in any image
+        best_indices = np.argmax(np.where(np.isnan(q_stack), -np.inf, q_stack), axis=0)  # (H, W)
 
-        out_data = np.zeros_like(ref._data)
-        for b in range(ref.count):
-            band_stack = np.stack([img._data[b] for img in self._images], axis=0)
-            out_data[b] = np.take_along_axis(band_stack, best_indices[np.newaxis, :, :], axis=0)[0]
+        out_data = np.take_along_axis(stack, best_indices[np.newaxis, np.newaxis, :, :], axis=0)[0]
+        out_data[:, no_data] = np.nan
 
-        return Image(out_data, transform=ref.transform, crs=ref.crs, band_names=ref.bands)
+        return ref._clone(out_data, transform=dst_transform, crs=ref.crs, band_names=ref.bands, nodata=np.nan)
 
     def to_xarray(self) -> Any:
         """
@@ -334,15 +356,21 @@ class ImageCollection(EarthObject):
         if not items:
             raise ValueError(f"No STAC items found for {collection} in {catalog}")
             
-        bbox = geometry.bounds if geometry and hasattr(geometry, "bounds") else None
+        from geoflow.earthdata.stac import _wgs84_bbox
+        bbox = _wgs84_bbox(geometry)
         
+        from geoflow.earthdata.stac import CATALOGS
         patch_url = None
-        if "planetarycomputer" in catalog:
+        if "planetarycomputer" in CATALOGS.get(catalog, catalog):
+            # Planetary Computer assets need SAS-signed URLs; unsigned reads fail with HTTP 409
             try:
                 import planetary_computer
-                patch_url = planetary_computer.sign_inplace
             except ImportError:
-                pass
+                raise ImportError(
+                    "Reading from Microsoft Planetary Computer requires the 'planetary-computer' package "
+                    "to sign asset URLs. Install it with: pip install \"geoflow[stac]\""
+                ) from None
+            patch_url = planetary_computer.sign_inplace
         
         return load_stac_collection(
             items=items,

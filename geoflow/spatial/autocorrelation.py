@@ -40,6 +40,21 @@ class MoranResult:
         return f"<MoranResult I={self.I:.4f} z={self.z_score:.2f} p={self.p_value:.4e}>"
 
 
+def _values(data: Any, value: Union[str, np.ndarray]) -> np.ndarray:
+    """Extract the observation vector, rejecting NaN (weights are built over all rows)."""
+    if isinstance(value, str):
+        gdf = data if isinstance(data, gpd.GeoDataFrame) else data.gdf
+        y = gdf[value].to_numpy(dtype=np.float64)
+    else:
+        y = np.asarray(value, dtype=np.float64)
+    if np.isnan(y).any():
+        raise ValueError(
+            f"{int(np.isnan(y).sum())} missing values in '{value if isinstance(value, str) else 'value'}'. "
+            "Drop those rows (e.g. gdf.dropna(subset=[...])) before computing spatial statistics."
+        )
+    return y
+
+
 def morans_i(
     data: Any,
     value: Union[str, np.ndarray],
@@ -47,18 +62,13 @@ def morans_i(
     k: int = 8,
 ) -> MoranResult:
     """
-    Compute Global Moran's I for spatial autocorrelation.
+    Compute Global Moran's I for spatial autocorrelation (analytical inference under randomization).
     """
-    if isinstance(data, gpd.GeoDataFrame):
-        y = data[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-    elif hasattr(data, "gdf"):
-        y = data.gdf[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-    else:
-        y = np.asarray(value, dtype=np.float64)
+    y = _values(data, value)
 
     n = len(y)
-    if n < 3:
-        raise ValueError("Moran's I requires at least 3 spatial observations")
+    if n < 4:
+        raise ValueError("Moran's I inference requires at least 4 spatial observations")
 
     if weights is None:
         weights = knn(data, k=k)
@@ -70,20 +80,20 @@ def morans_i(
     if ss == 0:
         return MoranResult(0.0, -1.0 / (n - 1), 0.0, 0.0, 1.0, n)
 
-    w_mat = weights.to_dense()
-    s0 = np.sum(w_mat)
+    w_mat = weights.to_sparse()
+    s0 = w_mat.sum()
     if s0 == 0:
         return MoranResult(0.0, -1.0 / (n - 1), 0.0, 0.0, 1.0, n)
 
     # Compute numerator: sum_i sum_j w_ij * z_i * z_j
-    numerator = np.dot(z, np.dot(w_mat, z))
+    numerator = float(z @ (w_mat @ z))
     I = (n / s0) * (numerator / ss)
 
     # Analytical Expectation and Variance under randomization
     expected = -1.0 / (n - 1)
 
-    s1 = 0.5 * np.sum((w_mat + w_mat.T)**2)
-    s2 = np.sum((np.sum(w_mat, axis=1) + np.sum(w_mat, axis=0))**2)
+    s1 = 0.5 * (w_mat + w_mat.T).power(2).sum()
+    s2 = np.sum((np.asarray(w_mat.sum(axis=1)).ravel() + np.asarray(w_mat.sum(axis=0)).ravel())**2)
     m4 = np.sum(z**4) / n
     m2 = ss / n
     b2 = m4 / (m2**2)  # Kurtosis
@@ -100,22 +110,19 @@ def morans_i(
 
 def gearys_c(data: Any, value: Union[str, np.ndarray], weights: Optional[SpatialWeights] = None, k: int = 8) -> float:
     """Compute Geary's C statistic."""
-    if isinstance(data, gpd.GeoDataFrame):
-        y = data[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-    elif hasattr(data, "gdf"):
-        y = data.gdf[value].to_numpy().astype(np.float64) if isinstance(value, str) else np.asarray(value)
-    else:
-        y = np.asarray(value, dtype=np.float64)
+    y = _values(data, value)
 
     n = len(y)
     if weights is None:
         weights = knn(data, k=k)
-    w_mat = weights.to_dense()
-    s0 = np.sum(w_mat)
+    w_coo = weights.to_sparse().tocoo()
+    s0 = w_coo.sum()
 
     z = y - np.mean(y)
     ss = np.sum(z**2)
+    if s0 == 0 or ss == 0:
+        return 1.0
 
-    diff_sq = (y[:, np.newaxis] - y[np.newaxis, :])**2
-    C = ((n - 1) / (2 * s0)) * (np.sum(w_mat * diff_sq) / ss)
+    weighted_diff = np.sum(w_coo.data * (y[w_coo.row] - y[w_coo.col])**2)
+    C = ((n - 1) / (2 * s0)) * (weighted_diff / ss)
     return float(C)

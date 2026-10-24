@@ -5,9 +5,9 @@ Extracts georeferenced footprint shots, relative height metrics (RH98), and qual
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
+import datetime
 import numpy as np
 import geopandas as gpd
-import shapely.geometry
 
 from geoflow.core.base import EarthObject
 from geoflow.geometry.base import Geometry
@@ -109,74 +109,35 @@ class GEDI(EarthObject):
                 "This GEDI object has no data files. Use GEDI.load(...) or pass files=[...]."
             )
         import h5py
+        import pandas as pd
 
-        shots = []
+        # Spatial filter as a WGS84 bounding box
+        bbox = None
+        if self._bounds_filter:
+            bbox = self._bounds_filter.bounds
+            if str(self._bounds_filter.crs) != "EPSG:4326":
+                from geoflow.core.crs import reproject_bounds
+                bbox = reproject_bounds(bbox, self._bounds_filter.crs, "EPSG:4326")
+
+        # Temporal filter as [start, end] inclusive, in seconds since the GEDI epoch (delta_time)
+        time_window = None
+        if self._date_filter:
+            from geoflow.core.filter import _parse_date
+            start, end = (_parse_date(d) for d in self._date_filter)
+            if start is None or end is None:
+                raise ValueError(f"Could not parse GEDI date filter {self._date_filter!r}")
+            epoch = datetime.date(2018, 1, 1)
+            time_window = ((start - epoch).days * 86400.0, ((end - epoch).days + 1) * 86400.0)
+
+        frames = []
         read_errors = []
         for f in self.files:
             try:
-                    with h5py.File(f, "r") as h5:
-                        for beam in [k for k in h5.keys() if k.startswith("BEAM")]:
-                            b_group = h5[beam]
-                            if "lat_lowestmode" not in b_group or "lon_lowestmode" not in b_group:
-                                continue
-                            lats = np.asarray(b_group["lat_lowestmode"][:], dtype=np.float64)
-                            lons = np.asarray(b_group["lon_lowestmode"][:], dtype=np.float64)
-                            n_points = len(lats)
-                            if n_points == 0:
-                                continue
-
-                            qual = b_group["quality_flag"][:] if "quality_flag" in b_group else np.ones(n_points, dtype=np.int32)
-                            degrade = b_group["degrade_flag"][:] if "degrade_flag" in b_group else np.zeros(n_points, dtype=np.int32)
-                            sens = b_group["sensitivity"][:] if "sensitivity" in b_group else np.ones(n_points, dtype=np.float32)
-
-                            mask = np.ones(n_points, dtype=bool)
-                            if self._quality_filter_active:
-                                mask &= (qual == 1) & (degrade == 0) & (sens >= 0.9)
-
-                            if self._bounds_filter:
-                                b = self._bounds_filter.bounds
-                                if hasattr(self._bounds_filter, "crs") and str(self._bounds_filter.crs) != "EPSG:4326":
-                                    from geoflow.core.crs import reproject_bounds
-                                    b = reproject_bounds(b, self._bounds_filter.crs, "EPSG:4326")
-                                mask &= (lons >= b[0]) & (lons <= b[2]) & (lats >= b[1]) & (lats <= b[3])
-
-                            if not np.any(mask):
-                                continue
-
-                            indices = np.where(mask)[0]
-                            val_lats = lats[indices]
-                            val_lons = lons[indices]
-                            val_qual = qual[indices]
-                            val_sens = sens[indices]
-
-                            shot_nums = b_group["shot_number"][:][indices] if "shot_number" in b_group else indices
-                            elevs = b_group["elev_lowestmode"][:][indices] if "elev_lowestmode" in b_group else np.zeros(len(indices))
-
-                            # L2A Relative Heights
-                            rh_data = b_group["rh"][:][indices] if "rh" in b_group else None
-                            rh98_vals = rh_data[:, 98] if (rh_data is not None and rh_data.ndim > 1) else (rh_data if rh_data is not None else np.zeros(len(indices)))
-                            rh100_vals = rh_data[:, 100] if (rh_data is not None and rh_data.ndim > 1) else rh98_vals
-                            rh50_vals = rh_data[:, 50] if (rh_data is not None and rh_data.ndim > 1) else np.zeros(len(indices))
-
-                            # L4A Aboveground Biomass
-                            agbd_vals = b_group["agbd"][:][indices] if "agbd" in b_group else np.zeros(len(indices))
-
-                            for idx_in_sub in range(len(indices)):
-                                rec = {
-                                    "shot_number": int(shot_nums[idx_in_sub]),
-                                    "beam": beam,
-                                    "latitude": float(val_lats[idx_in_sub]),
-                                    "longitude": float(val_lons[idx_in_sub]),
-                                    "elevation": float(elevs[idx_in_sub]),
-                                    "quality_flag": int(val_qual[idx_in_sub]),
-                                    "sensitivity": float(val_sens[idx_in_sub]),
-                                    "rh50": float(rh50_vals[idx_in_sub]),
-                                    "rh98": float(rh98_vals[idx_in_sub]),
-                                    "rh100": float(rh100_vals[idx_in_sub]),
-                                    "agbd": float(agbd_vals[idx_in_sub]),
-                                    "geometry": shapely.geometry.Point(float(val_lons[idx_in_sub]), float(val_lats[idx_in_sub])),
-                                }
-                                shots.append(rec)
+                with h5py.File(f, "r") as h5:
+                    for beam in [k for k in h5.keys() if k.startswith("BEAM")]:
+                        frame = self._read_beam(h5[beam], beam, bbox, time_window)
+                        if frame is not None:
+                            frames.append(frame)
             except Exception as e:
                 read_errors.append(f"{f}: {e}")
 
@@ -191,15 +152,92 @@ class GEDI(EarthObject):
 
         columns = [
             "shot_number", "beam", "latitude", "longitude", "elevation", "quality_flag",
-            "sensitivity", "rh50", "rh98", "rh100", "agbd", "geometry",
+            "sensitivity", "rh50", "rh98", "rh100", "agbd", "delta_time",
         ]
-        gdf = gpd.GeoDataFrame(shots, columns=columns, geometry="geometry", crs="EPSG:4326")
+        df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame({c: [] for c in columns})
+        gdf = gpd.GeoDataFrame(
+            df[columns],
+            geometry=gpd.points_from_xy(df["longitude"], df["latitude"]),
+            crs="EPSG:4326",
+        )
         if gdf.empty:
             import warnings
             warnings.warn("No GEDI shots matched the region/quality filters.")
         # Keep selected variables
         keep_cols = ["geometry", "latitude", "longitude"] + [v for v in self._selected_variables if v in gdf.columns]
         return gdf[keep_cols]
+
+    def _read_beam(self, b_group: Any, beam: str, bbox: Optional[Tuple[float, ...]], time_window: Optional[Tuple[float, float]]):
+        """
+        Read one BEAM group into a DataFrame of filtered shots, or None if nothing matches.
+        Handles L2A/L4A (variables at the beam root) and L2B (geolocation under BEAMxxxx/geolocation,
+        rh100 in centimetres, l2b_quality_flag).
+        """
+        import pandas as pd
+
+        def find(*names):
+            for name in names:
+                if name in b_group:
+                    return b_group[name]
+            return None
+
+        lat_ds = find("lat_lowestmode", "geolocation/lat_lowestmode")
+        lon_ds = find("lon_lowestmode", "geolocation/lon_lowestmode")
+        if lat_ds is None or lon_ds is None:
+            return None
+        lats = np.asarray(lat_ds[:], dtype=np.float64)
+        lons = np.asarray(lon_ds[:], dtype=np.float64)
+        n_points = len(lats)
+        if n_points == 0:
+            return None
+
+        def read(ds, default, dtype=np.float64):
+            return np.asarray(ds[:], dtype=dtype) if ds is not None else np.full(n_points, default, dtype=dtype)
+
+        qual = read(find("quality_flag", "l2b_quality_flag", "l4_quality_flag"), 1, np.int32)
+        degrade = read(find("degrade_flag", "geolocation/degrade_flag"), 0, np.int32)
+        sens = read(find("sensitivity", "geolocation/sensitivity"), 1.0)
+        delta_time = read(find("delta_time", "geolocation/delta_time"), np.nan)
+
+        mask = np.isfinite(lats) & np.isfinite(lons)
+        if self._quality_filter_active:
+            mask &= (qual == 1) & (degrade == 0) & (sens >= 0.9)
+        if bbox is not None:
+            mask &= (lons >= bbox[0]) & (lons <= bbox[2]) & (lats >= bbox[1]) & (lats <= bbox[3])
+        if time_window is not None:
+            mask &= (delta_time >= time_window[0]) & (delta_time < time_window[1])
+        if not np.any(mask):
+            return None
+        idx = np.where(mask)[0]
+
+        shot_ds = find("shot_number", "geolocation/shot_number")
+        shot_nums = np.asarray(shot_ds[:])[idx] if shot_ds is not None else idx
+        elevs = read(find("elev_lowestmode", "geolocation/elev_lowestmode"), np.nan)[idx]
+
+        nan = np.full(len(idx), np.nan)
+        rh50 = rh98 = rh100 = nan
+        rh_ds = find("rh")
+        if rh_ds is not None and rh_ds.ndim > 1:  # L2A: rh[:, 0..100] in metres
+            rh = np.asarray(rh_ds[:], dtype=np.float64)[idx]
+            rh50, rh98, rh100 = rh[:, 50], rh[:, 98], rh[:, 100]
+        elif find("rh100") is not None:  # L2B: rh100 in centimetres
+            rh100 = read(find("rh100"), np.nan)[idx] / 100.0
+        agbd = read(find("agbd"), np.nan)[idx]  # L4A
+
+        return pd.DataFrame({
+            "shot_number": shot_nums,
+            "beam": beam,
+            "latitude": lats[idx],
+            "longitude": lons[idx],
+            "elevation": elevs,
+            "quality_flag": qual[idx],
+            "sensitivity": sens[idx],
+            "rh50": rh50,
+            "rh98": rh98,
+            "rh100": rh100,
+            "agbd": agbd,
+            "delta_time": delta_time[idx],
+        })
 
     def to_feature_collection(self) -> FeatureCollection:
         return FeatureCollection(self.to_geodataframe())

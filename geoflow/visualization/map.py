@@ -9,7 +9,9 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 import json
 import base64
+import html
 import io
+import re
 from pathlib import Path
 from PIL import Image as PILImage
 import numpy as np
@@ -70,16 +72,18 @@ class Map:
 
     def add_basemap(self, basemap: str = "HYBRID") -> Map:
         """Set or add basemap layer."""
+        osm = "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
         basemaps = {
-            "ROADMAP": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "OpenStreetMap": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "SATELLITE": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            "HYBRID": "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-            "TERRAIN": "https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
-            "Positron": "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png",
-            "Dark_Matter": "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+            "ROADMAP": ("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", osm),
+            "OpenStreetMap": ("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", osm),
+            "SATELLITE": ("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                          "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"),
+            "HYBRID": ("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", "Imagery &copy; Google"),
+            "TERRAIN": ("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", "Map data &copy; Google"),
+            "Positron": ("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", osm + " &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"),
+            "Dark_Matter": ("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", osm + " &copy; <a href=\"https://carto.com/attributions\">CARTO</a>"),
         }
-        self.basemap_url = basemaps.get(basemap, basemaps["HYBRID"])
+        self.basemap_url, self.basemap_attribution = basemaps.get(basemap, basemaps["HYBRID"])
         self.basemap_name = basemap
         return self
 
@@ -173,9 +177,13 @@ class Map:
 
     def to_html(self, filepath: Optional[Union[str, Path]] = None) -> str:
         """Generate standalone, responsive interactive HTML map."""
-        layers_json = json.dumps(self.layers)
-        legends_json = json.dumps(self.legends)
-        colorbars_json = json.dumps(self.colorbars)
+        def js(value: Any) -> str:
+            # JSON with <, > and & escaped, so data can never close the <script> element
+            return (json.dumps(value).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
+
+        layers_json = js(self.layers)
+        legends_json = js(self.legends)
+        height_css = str(self.height) if re.fullmatch(r"\d+(\.\d+)?(px|%|vh|em|rem)?", str(self.height)) else "600px"
 
         html = f"""<!DOCTYPE html>
 <html>
@@ -187,7 +195,7 @@ class Map:
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body, html {{ margin: 0; padding: 0; height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-        #map {{ height: {self.height}; width: 100%; }}
+        #map {{ height: {height_css}; width: 100%; }}
         .leaflet-control-layers {{ box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px; }}
         .map-legend {{ background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 13px; line-height: 18px; color: #333; }}
         .map-legend h4 {{ margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #111; }}
@@ -198,10 +206,15 @@ class Map:
 <body>
     <div id="map"></div>
     <script>
-        var map = L.map('map').setView([{self.center[0]}, {self.center[1]}], {self.zoom});
-        var basemap = L.tileLayer('{self.basemap_url}', {{
+        function esc(v) {{
+            return String(v).replace(/[&<>"']/g, function(c) {{
+                return {{'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}}[c];
+            }});
+        }}
+        var map = L.map('map').setView([{float(self.center[0])}, {float(self.center[1])}], {int(self.zoom)});
+        var basemap = L.tileLayer({js(self.basemap_url)}, {{
             maxZoom: 20,
-            attribution: 'Map &copy; GeoFlow / Contributors'
+            attribution: {js(self.basemap_attribution)}
         }}).addTo(map);
 
         var overlays = {{}};
@@ -231,7 +244,7 @@ class Map:
                         if (f.properties) {{
                             var desc = "<b>Properties:</b><br>";
                             for (var k in f.properties) {{
-                                desc += k + ": " + f.properties[k] + "<br>";
+                                desc += esc(k) + ": " + esc(f.properties[k]) + "<br>";
                             }}
                             layer.bindPopup(desc);
                         }}
@@ -242,7 +255,11 @@ class Map:
             }}
         }});
 
-        L.control.layers({{ '{self.basemap_name}': basemap }}, overlays, {{ collapsed: false }}).addTo(map);
+        var baseLayers = {{}};
+        baseLayers[esc({js(self.basemap_name)})] = basemap;
+        var namedOverlays = {{}};
+        for (var name in overlays) {{ namedOverlays[esc(name)] = overlays[name]; }}
+        L.control.layers(baseLayers, namedOverlays, {{ collapsed: false }}).addTo(map);
 
         // Add legends if any
         var legends = {legends_json};
@@ -250,9 +267,18 @@ class Map:
             var c = L.control({{ position: 'bottomright' }});
             c.onAdd = function() {{
                 var div = L.DomUtil.create('div', 'map-legend');
-                div.innerHTML = '<h4>' + leg.title + '</h4>';
+                var h = document.createElement('h4');
+                h.textContent = leg.title;
+                div.appendChild(h);
                 leg.items.forEach(function(item) {{
-                    div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:' + item[0] + '"></span>' + item[1] + '</div>';
+                    var row = document.createElement('div');
+                    row.className = 'legend-item';
+                    var swatch = document.createElement('span');
+                    swatch.className = 'legend-color';
+                    swatch.style.background = item[0];
+                    row.appendChild(swatch);
+                    row.appendChild(document.createTextNode(item[1]));
+                    div.appendChild(row);
                 }});
                 return div;
             }};
@@ -273,5 +299,5 @@ class Map:
     def _repr_html_(self) -> str:
         """Embed iframe HTML directly in Jupyter notebooks."""
         html_content = self.to_html()
-        escaped = html_content.replace('"', '&quot;')
-        return f'<iframe srcdoc="{escaped}" width="100%" height="{self.height}" style="border:none; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></iframe>'
+        escaped = html.escape(html_content, quote=True)
+        return f'<iframe srcdoc="{escaped}" width="100%" height="{html.escape(str(self.height), quote=True)}" style="border:none; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></iframe>'

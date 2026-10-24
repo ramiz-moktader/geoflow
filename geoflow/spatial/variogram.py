@@ -61,14 +61,9 @@ def variogram(
     else:
         raise TypeError("variogram expects GeoDataFrame or FeatureCollection")
 
-    # Pairwise distances and squared differences
+    # Pairwise distances and semivariances, in the same condensed pair order
     pdist = scipy.spatial.distance.pdist(coords)
-    n = len(y)
-    diff_sq = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            diff_sq.append(0.5 * ((y[i] - y[j])**2))
-    diff_sq = np.array(diff_sq)
+    diff_sq = 0.5 * scipy.spatial.distance.pdist(np.asarray(y, dtype=np.float64)[:, np.newaxis], "sqeuclidean")
 
     max_d = max_dist or (np.max(pdist) / 2.0)
     valid_mask = pdist <= max_d

@@ -5,11 +5,13 @@ Implements stratified, balanced, minimum-distance, and sampling bias diagnostics
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
+import warnings
 import numpy as np
 import scipy.spatial
 import geopandas as gpd
 import shapely.geometry
 
+from geoflow.core.crs import CRS
 from geoflow.geometry.base import Geometry
 from geoflow.vector.collection import FeatureCollection
 
@@ -32,26 +34,29 @@ def stratified(
     points = []
 
     if isinstance(strata, Image):
-        # Sample directly from the strata Image pixels within region
+        # Sample pixel centres of each class, restricted to the region before sampling
+        from rasterio.features import geometry_mask
+        if geom.crs != strata.crs:
+            geom = geom.reproject(strata.crs)
         data = strata.data[0]
-        valid_mask = ~np.isnan(data)
+        in_region = geometry_mask([geom.shapely], out_shape=data.shape, transform=strata.transform, invert=True)
+        valid_mask = ~np.isnan(data) & in_region
         unique_classes = np.unique(data[valid_mask])
 
         for cls in unique_classes:
-            rows, cols = np.where(data == cls)
-            if len(rows) == 0:
-                continue
-            sample_count = min(n_per_stratum, len(rows))
-            chosen = rng.choice(len(rows), size=sample_count, replace=(len(rows) < n_per_stratum))
+            rows, cols = np.where(valid_mask & (data == cls))
+            if len(rows) < n_per_stratum:
+                warnings.warn(f"Stratum {cls} has only {len(rows)} pixels in the region (requested {n_per_stratum}); taking all of them.")
+            chosen = rng.choice(len(rows), size=min(n_per_stratum, len(rows)), replace=False)
             for idx in chosen:
                 r, c = rows[idx], cols[idx]
                 x, y = strata.transform @ (c + 0.5, r + 0.5)
-                pt = shapely.geometry.Point(x, y)
-                if geom.contains(pt):
-                    points.append({"stratum": int(cls) if float(cls).is_integer() else cls, "geometry": pt})
+                points.append({"stratum": int(cls) if float(cls).is_integer() else cls, "geometry": shapely.geometry.Point(x, y)})
 
     elif hasattr(strata, "gdf") or isinstance(strata, gpd.GeoDataFrame):
         gdf_strata = strata.gdf if hasattr(strata, "gdf") else strata
+        if gdf_strata.crs is not None and geom.crs != CRS(gdf_strata.crs):
+            geom = geom.reproject(CRS(gdf_strata.crs))
         col = next((c for c in ["stratum", "class", "landcover", "label"] if c in gdf_strata.columns), gdf_strata.columns[0])
         unique_classes = gdf_strata[col].unique()
         for cls in unique_classes:
@@ -87,7 +92,9 @@ def stratified(
                     collected += 1
 
     if not points:
-        points.append({"stratum": 0, "geometry": shapely.geometry.Point((minx + maxx) / 2, (miny + maxy) / 2)})
+        warnings.warn("Stratified sampling found no points inside the region; returning an empty FeatureCollection.")
+        gdf = gpd.GeoDataFrame({"stratum": []}, geometry=[], crs=geom.crs.to_string())
+        return FeatureCollection(gdf, crs=geom.crs)
 
     gdf = gpd.GeoDataFrame(points, crs=geom.crs.to_string())
     return FeatureCollection(gdf, crs=geom.crs)
@@ -106,13 +113,13 @@ def min_distance(
     rng = np.random.RandomState(random_state)
     gdf = candidates.gdf if hasattr(candidates, "gdf") else candidates.copy()
 
-    # Convert meters to degrees if CRS is geographic
+    # Measure in metres: project geographic data to its local UTM zone
+    work = gdf
+    if gdf.crs is not None and gdf.crs.is_geographic and unit.lower() in ("meter", "meters", "metres", "m"):
+        work = gdf.to_crs(gdf.estimate_utm_crs())
     eff_distance = distance
-    crs = gdf.crs
-    if crs and getattr(crs, "is_geographic", False) and unit.lower() in ("meter", "meters", "m"):
-        eff_distance = distance / 111320.0
 
-    coords = np.array([[g.centroid.x, g.centroid.y] for g in gdf.geometry])
+    coords = np.array([[g.centroid.x, g.centroid.y] for g in work.geometry])
     indices = np.arange(len(coords))
     rng.shuffle(indices)
 

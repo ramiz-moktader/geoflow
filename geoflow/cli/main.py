@@ -1,17 +1,15 @@
 """
 Command Line Interface for GeoFlow.
-Provides `geoflow search`, `download`, `info`, `gpu`, and `cache` commands.
+Provides `geoflow search`, `info`, and `gpu` commands.
 """
 
 from __future__ import annotations
 import click
-import json
 import shutil
 from pathlib import Path
 
 from geoflow.core.config import config
 from geoflow.earthdata.search import search
-from geoflow.earthdata.downloader import download
 
 
 @click.group()
@@ -32,8 +30,17 @@ def search_cmd(dataset: str, bbox: str, start: str, end: str, limit: int):
     results = search(dataset, region=region, start=start, end=end, limit=limit)
     click.echo(f"Found {len(results)} granules for dataset '{dataset}':")
     for r in results:
-        title = r.get("title", r.get("id"))
-        click.echo(f"  - {title}")
+        click.echo(f"  - {_granule_title(r)}")
+
+
+def _granule_title(granule) -> str:
+    """Title for a CMR dict result or an earthaccess DataGranule."""
+    if isinstance(granule, dict):
+        umm = granule.get("umm") or {}
+        title = granule.get("title") or umm.get("GranuleUR") or granule.get("id")
+        if title:
+            return str(title)
+    return str(granule)
 
 
 @click.command()
@@ -50,7 +57,6 @@ def info():
 @click.command()
 def gpu():
     """Check GPU acceleration availability."""
-    import sys
     click.echo("=== Hardware Acceleration Status ===")
     cuda_avail = False
     try:

@@ -122,9 +122,11 @@ def draw_scale_bar(
         deg_to_m = 111320.0 * math.cos(math.radians(center_lat))
         total_width_m = (maxx - minx) * deg_to_m
     else:
-        # Check if Web Mercator (EPSG:3857) where units scale by cos(lat)
-        crs_str = str(crs_obj).lower()
-        if "3857" in crs_str or "web" in crs_str or "mercator" in crs_str:
+        # Mercator projections (e.g. EPSG:3857) stretch distances by 1/cos(lat):
+        # ground metres = projected units * cos(lat)
+        op = crs_obj.pyproj_crs.coordinate_operation
+        method = (op.method_name if op is not None else "").lower()
+        if "mercator" in method and "transverse" not in method:
             try:
                 tf = get_cached_transformer(str(crs_obj.pyproj_crs))
                 if tf is not None:
@@ -135,7 +137,7 @@ def draw_scale_bar(
             except Exception:
                 scale_factor = 1.0
             total_width_m = (maxx - minx) * scale_factor
-            deg_to_m = 1.0 / scale_factor
+            deg_to_m = scale_factor  # ground metres per projected unit
         else:
             total_width_m = (maxx - minx)  # Already in true meters (e.g. UTM)
             deg_to_m = 1.0

@@ -5,6 +5,7 @@ Test suite for GeoFlow In-Notebook Interactive Cartographic Layout Editor.
 import sys
 from pathlib import Path
 import numpy as np
+import pytest
 from rasterio.transform import from_bounds
 import geopandas as gpd
 from shapely.geometry import box
@@ -14,6 +15,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import geoflow as gf
 from geoflow.viz.layout_editor import create_layout_editor
+
+pytest.importorskip("ipywidgets", reason="layout editor needs the optional notebook extra")
 
 
 def test_layout_editor():

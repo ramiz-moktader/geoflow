@@ -22,6 +22,72 @@ from geoflow.core.reducer import Reducer
 from geoflow.geometry.base import Geometry
 
 
+_EXPR_FUNCTIONS = {
+    "sin": np.sin, "cos": np.cos, "tan": np.tan, "log": np.log, "log10": np.log10,
+    "exp": np.exp, "sqrt": np.sqrt, "abs": np.abs, "min": np.minimum, "max": np.maximum,
+}
+
+
+def _evaluate_expression(expr_str: str, variables: Dict[str, Any]) -> Any:
+    """
+    Safely evaluate a band-math expression. Only numbers, variable names, arithmetic,
+    comparisons, and/or/not, conditional (a if cond else b) and the functions in
+    _EXPR_FUNCTIONS are allowed; attribute access, subscripts and other calls are rejected.
+    """
+    import ast
+    import operator
+
+    bin_ops = {
+        ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+        ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv, ast.Mod: operator.mod,
+        ast.Pow: operator.pow,
+    }
+    unary_ops = {ast.UAdd: operator.pos, ast.USub: operator.neg, ast.Not: np.logical_not}
+    cmp_ops = {
+        ast.Lt: operator.lt, ast.LtE: operator.le, ast.Gt: operator.gt,
+        ast.GtE: operator.ge, ast.Eq: operator.eq, ast.NotEq: operator.ne,
+    }
+
+    def ev(node):
+        if isinstance(node, ast.Expression):
+            return ev(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+            return node.value
+        if isinstance(node, ast.Name):
+            if node.id in variables:
+                return variables[node.id]
+            raise NameError(f"Unknown band or variable '{node.id}' in expression. Available: {sorted(variables)}")
+        if isinstance(node, ast.BinOp) and type(node.op) in bin_ops:
+            return bin_ops[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in unary_ops:
+            return unary_ops[type(node.op)](ev(node.operand))
+        if isinstance(node, ast.BoolOp):
+            combine = np.logical_and if isinstance(node.op, ast.And) else np.logical_or
+            result = ev(node.values[0])
+            for value in node.values[1:]:
+                result = combine(result, ev(value))
+            return result
+        if isinstance(node, ast.Compare) and all(type(op) in cmp_ops for op in node.ops):
+            left, result = ev(node.left), True
+            for op, comparator in zip(node.ops, node.comparators):
+                right = ev(comparator)
+                result = np.logical_and(result, cmp_ops[type(op)](left, right))
+                left = right
+            return result
+        if isinstance(node, ast.IfExp):
+            return np.where(ev(node.test), ev(node.body), ev(node.orelse))
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id in _EXPR_FUNCTIONS and not node.keywords):
+            return _EXPR_FUNCTIONS[node.func.id](*[ev(a) for a in node.args])
+        raise ValueError(f"Unsupported syntax in expression: {ast.dump(node)[:80]}")
+
+    try:
+        tree = ast.parse(expr_str.strip(), mode="eval")
+    except SyntaxError as e:
+        raise ValueError(f"Invalid expression {expr_str!r}: {e}") from None
+    return ev(tree)
+
+
 class Image(EarthObject):
     """GEE-like Image object wrapping multi-band geospatial raster data."""
 
@@ -47,10 +113,11 @@ class Image(EarthObject):
         if isinstance(source, (str, Path)):
             # Load from raster file
             with rasterio.open(source) as src:
-                self._data = src.read().astype(np.float32)
+                # Internally, missing data is always NaN: masked reads honour nodata values and dataset masks
+                self._data = src.read(masked=True).astype(np.float32).filled(np.nan)
                 self._transform = src.transform
                 self._crs = CRS(src.crs.to_string() if src.crs else "EPSG:4326")
-                self._nodata = src.nodata if src.nodata is not None else np.nan
+                self._nodata = np.nan
                 descriptions = [d for d in src.descriptions if d]
                 if band_names:
                     self._band_names = band_names
@@ -66,10 +133,13 @@ class Image(EarthObject):
             elif arr.ndim != 3:
                 raise ValueError(f"Array must be 2D or 3D, got ndim={arr.ndim}")
 
+            # Internally, missing data is always NaN: convert an explicit nodata sentinel
+            if nodata is not None and not np.isnan(nodata):
+                arr = np.where(arr == nodata, np.nan, arr).astype(np.float32)
             self._data = arr
             self._transform = transform or Affine.identity()
             self._crs = crs if isinstance(crs, CRS) else CRS(crs)
-            self._nodata = nodata if nodata is not None else np.nan
+            self._nodata = np.nan
 
             if band_names:
                 if len(band_names) != self._data.shape[0]:
@@ -101,16 +171,21 @@ class Image(EarthObject):
         # Read the first file to get transform and shape
         with rasterio.open(filepaths[0]) as src:
             transform = src.transform
+            src_crs = src.crs
             crs = src.crs.to_string() if src.crs else "EPSG:4326"
-            nodata = src.nodata
             height, width = src.shape
-            
+
         data = np.zeros((len(filepaths), height, width), dtype=np.float32)
         inferred_names = []
-        
+
         for i, fp in enumerate(filepaths):
             with rasterio.open(fp) as src:
-                data[i] = src.read(1).astype(np.float32)
+                if src.shape != (height, width) or src.transform != transform or src.crs != src_crs:
+                    raise ValueError(
+                        f"Cannot stack {fp}: its grid (shape={src.shape}, crs={src.crs}) differs from "
+                        f"{filepaths[0]} (shape={(height, width)}, crs={src_crs}). Reproject the bands to a common grid first."
+                    )
+                data[i] = src.read(1, masked=True).astype(np.float32).filled(np.nan)
                 
             # Attempt to infer band name from filename
             name = Path(fp).stem
@@ -119,7 +194,7 @@ class Image(EarthObject):
             inferred_names.append(parts[-1] if len(parts) > 1 else name)
             
         b_names = band_names if band_names else inferred_names
-        return cls(data, transform=transform, crs=crs, band_names=b_names, nodata=nodata)
+        return cls(data, transform=transform, crs=crs, band_names=b_names)
 
     # -------------------------------------------------------------
     # Properties
@@ -361,6 +436,16 @@ class Image(EarthObject):
     def __ne__(self, other: Any) -> Image:
         return self._apply_binary_op(other, lambda a, b: (a != b).astype(np.float32))
 
+    # == and != are pixel-wise (like NumPy), so identity is used for hashing and truthiness is
+    # ambiguous: `img in list` or `if img == other:` would otherwise silently be True.
+    __hash__ = object.__hash__
+
+    def __bool__(self) -> bool:
+        raise TypeError(
+            "The truth value of a geoflow.Image is ambiguous (comparisons are pixel-wise). "
+            "Use `img is other` for identity, or reduce the result, e.g. np.all((a == b).data)."
+        )
+
     # -------------------------------------------------------------
     # Expressions & Map Calculations
     # -------------------------------------------------------------
@@ -369,8 +454,6 @@ class Image(EarthObject):
         Evaluate a mathematical expression.
         e.g., image.expression("((NIR - RED) / (NIR + RED))", {"NIR": img.select("B8"), "RED": img.select("B4")})
         """
-        import ast
-
         band_dict = band_dict or {}
         # Also auto-populate available band names from this image
         local_scope = {}
@@ -384,16 +467,8 @@ class Image(EarthObject):
             elif isinstance(v, (int, float, np.ndarray)):
                 local_scope[k] = v
 
-        # Add math functions
-        local_scope["sin"] = np.sin
-        local_scope["cos"] = np.cos
-        local_scope["tan"] = np.tan
-        local_scope["log"] = np.log
-        local_scope["exp"] = np.exp
-        local_scope["sqrt"] = np.sqrt
-        local_scope["abs"] = np.abs
-
-        result_arr = eval(expr_str, {"__builtins__": {}}, local_scope)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result_arr = _evaluate_expression(expr_str, local_scope)
         if isinstance(result_arr, (int, float)):
             result_arr = np.full((1, self.height, self.width), result_arr, dtype=np.float32)
         elif isinstance(result_arr, np.ndarray):
@@ -490,7 +565,9 @@ class Image(EarthObject):
         return self._clone(np.clip(self._data, low, high))
 
     def clip(self, geometry: Union[Geometry, Any]) -> Image:
-        """Clip raster to geometry polygon mask."""
+        """Clip raster to geometry polygon mask. A Geometry in another CRS is reprojected to the image CRS."""
+        if isinstance(geometry, Geometry) and geometry.crs != self._crs:
+            geometry = geometry.reproject(self._crs)
         geom_shapely = geometry.to_shapely() if hasattr(geometry, "to_shapely") else geometry
         # Generate boolean mask where False is inside polygon, True is outside
         mask = geometry_mask(
@@ -611,7 +688,7 @@ class Image(EarthObject):
         qa_band : str, optional
             Name of QA band. If None, auto-detected from ['Fmask', 'QA_PIXEL', 'SCL', 'QA', 'QA60'].
         method : str, default 'auto'
-            Masking profile: 'auto', 'fmask', 'landsat_c2', 'scl'.
+            Masking profile: 'auto', 'fmask', 'landsat_c2', 'scl', 'qa60' (Sentinel-2 L1C).
         keep_clear : bool, default True
             If True, retains clear pixels and sets cloudy/shadowed pixels to NaN.
         """
@@ -629,9 +706,11 @@ class Image(EarthObject):
                 "Specify qa_band or load an image with Fmask, QA_PIXEL, or SCL."
             )
 
-        qa_arr = self.select(qa_band)._data[0].astype(np.uint32)
+        qa_raw = self.select(qa_band)._data[0]
+        qa_missing = np.isnan(qa_raw)
+        qa_arr = np.where(qa_missing, 0, qa_raw).astype(np.uint32)
         band_lower = qa_band.lower()
-        
+
         # Determine method
         chosen_method = method.lower()
         if chosen_method == "auto":
@@ -639,16 +718,18 @@ class Image(EarthObject):
                 chosen_method = "fmask"
             elif "scl" in band_lower:
                 chosen_method = "scl"
+            elif "qa60" in band_lower:
+                chosen_method = "qa60"
             elif "pixel" in band_lower or "qa" in band_lower:
                 chosen_method = "landsat_c2"
             else:
                 chosen_method = "fmask"
 
         if chosen_method == "fmask":
-            # HLS Fmask: Bit 1 = cloud, Bit 2 = cloud shadow, Bit 3 = adjacent
+            # HLS Fmask: Bit 1 = cloud, Bit 2 = adjacent to cloud/shadow, Bit 3 = cloud shadow
             is_cloud = (qa_arr & (1 << 1)) != 0
-            is_shadow = (qa_arr & (1 << 2)) != 0
-            is_adjacent = (qa_arr & (1 << 3)) != 0
+            is_adjacent = (qa_arr & (1 << 2)) != 0
+            is_shadow = (qa_arr & (1 << 3)) != 0
             clear_mask = ~(is_cloud | is_shadow | is_adjacent)
         elif chosen_method == "landsat_c2":
             # Landsat C2 QA_PIXEL: Bit 1 = dilated cloud, Bit 2 = cirrus, Bit 3 = cloud, Bit 4 = cloud shadow
@@ -660,10 +741,14 @@ class Image(EarthObject):
         elif chosen_method == "scl":
             # Sentinel-2 SCL: 4 (vegetation), 5 (bare soil), 6 (water), 7 (unclassified)
             clear_mask = np.isin(qa_arr, [4, 5, 6, 7])
+        elif chosen_method == "qa60":
+            # Sentinel-2 L1C QA60: Bit 10 = opaque cloud, Bit 11 = cirrus
+            clear_mask = (qa_arr & ((1 << 10) | (1 << 11))) == 0
         else:
-            raise ValueError(f"Unknown QA masking method: '{method}'. Supported: 'auto', 'fmask', 'landsat_c2', 'scl'")
+            raise ValueError(f"Unknown QA masking method: '{method}'. Supported: 'auto', 'fmask', 'landsat_c2', 'scl', 'qa60'")
 
-        valid_mask = clear_mask if keep_clear else ~clear_mask
+        clear_mask &= ~qa_missing  # no QA information: cannot be confirmed clear
+        valid_mask = clear_mask if keep_clear else (~clear_mask & ~qa_missing)
         out_data = self._data.copy()
         out_data[:, ~valid_mask] = np.nan
         return self._clone(out_data)
@@ -751,36 +836,48 @@ class Image(EarthObject):
             return np.ones((size, size), dtype=float)
 
     def focal_mean(self, radius: int = 3, kernel: str = "circle") -> Image:
+        """Neighbourhood mean ignoring NaN neighbours (normalized convolution); NaN pixels stay NaN."""
         k = self._get_kernel(radius, kernel)
-        k /= np.sum(k)
-        out = np.zeros_like(self._data)
+        out = np.full_like(self._data, np.nan)
         for i in range(self.count):
-            filled = np.nan_to_num(self._data[i], nan=np.nanmean(self._data[i]))
-            out[i] = ndi.convolve(filled, k, mode="reflect")
+            band = self._data[i]
+            valid = ~np.isnan(band)
+            num = ndi.convolve(np.where(valid, band, 0.0), k, mode="reflect")
+            den = ndi.convolve(valid.astype(np.float32), k, mode="reflect")
+            with np.errstate(divide="ignore", invalid="ignore"):
+                out[i] = np.where(valid & (den > 0), num / den, np.nan)
         return self._clone(out)
 
     def focal_median(self, radius: int = 3) -> Image:
+        """Neighbourhood median ignoring NaN neighbours; NaN pixels stay NaN."""
         size = 2 * radius + 1
-        out = np.zeros_like(self._data)
+        out = np.full_like(self._data, np.nan)
         for i in range(self.count):
-            filled = np.nan_to_num(self._data[i], nan=0.0)
-            out[i] = ndi.median_filter(filled, size=size)
+            band = self._data[i]
+            valid = ~np.isnan(band)
+            if valid.all():
+                out[i] = ndi.median_filter(band, size=size)
+            else:
+                out[i] = ndi.generic_filter(band, np.nanmedian, size=size, mode="reflect")
+            out[i][~valid] = np.nan
         return self._clone(out)
 
     def focal_min(self, radius: int = 3) -> Image:
         size = 2 * radius + 1
         out = np.zeros_like(self._data)
         for i in range(self.count):
-            filled = np.nan_to_num(self._data[i], nan=np.nanmax(self._data[i]))
-            out[i] = ndi.minimum_filter(filled, size=size)
+            valid = ~np.isnan(self._data[i])
+            filled = np.where(valid, self._data[i], np.inf)  # NaN never wins a minimum
+            out[i] = np.where(valid, ndi.minimum_filter(filled, size=size), np.nan)
         return self._clone(out)
 
     def focal_max(self, radius: int = 3) -> Image:
         size = 2 * radius + 1
         out = np.zeros_like(self._data)
         for i in range(self.count):
-            filled = np.nan_to_num(self._data[i], nan=np.nanmin(self._data[i]))
-            out[i] = ndi.maximum_filter(filled, size=size)
+            valid = ~np.isnan(self._data[i])
+            filled = np.where(valid, self._data[i], -np.inf)  # NaN never wins a maximum
+            out[i] = np.where(valid, ndi.maximum_filter(filled, size=size), np.nan)
         return self._clone(out)
 
     def focal_std(self, radius: int = 3) -> Image:
@@ -792,33 +889,45 @@ class Image(EarthObject):
     # -------------------------------------------------------------
     # Terrain Analysis (Elevation DEM)
     # -------------------------------------------------------------
-    def slope(self) -> Image:
-        """Calculate terrain slope in degrees."""
+    def _terrain_gradients(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Elevation gradients (gy, gx) in elevation units per metre, with gy along increasing row (south).
+        Geographic CRS pixel sizes are converted from degrees to metres at each row's latitude.
+        """
         dem = self._data[0]
-        # pixel sizes
         dx = abs(self._transform.a)
         dy = abs(self._transform.e)
-        gy, gx = np.gradient(dem, dy, dx)
+        d_row = np.gradient(dem, axis=0)
+        d_col = np.gradient(dem, axis=1)
+        if self._crs.is_geographic:
+            rows = np.arange(self.height) + 0.5
+            lat = np.radians(self._transform.f + rows * self._transform.e)
+            # Metres per degree of latitude / longitude on the WGS84 ellipsoid
+            m_per_deg_lat = 111132.954 - 559.822 * np.cos(2 * lat) + 1.175 * np.cos(4 * lat)
+            m_per_deg_lon = 111412.84 * np.cos(lat) - 93.5 * np.cos(3 * lat)
+            dy_m = (dy * m_per_deg_lat)[:, np.newaxis]
+            dx_m = (dx * np.maximum(m_per_deg_lon, 1e-6))[:, np.newaxis]
+        else:
+            dy_m, dx_m = dy, dx
+        return d_row / dy_m, d_col / dx_m
+
+    def slope(self) -> Image:
+        """Calculate terrain slope in degrees."""
+        gy, gx = self._terrain_gradients()
         slope_rad = np.arctan(np.sqrt(gx**2 + gy**2))
         slope_deg = np.degrees(slope_rad)
         return self._clone(slope_deg[np.newaxis, :, :], band_names=["slope"])
 
     def aspect(self) -> Image:
         """Calculate terrain aspect in degrees (0 to 360 clockwise from North)."""
-        dem = self._data[0]
-        dx = abs(self._transform.a)
-        dy = abs(self._transform.e)
-        gy, gx = np.gradient(dem, dy, dx)
+        gy, gx = self._terrain_gradients()
         aspect_rad = np.arctan2(-gx, gy)
         aspect_deg = (np.degrees(aspect_rad) + 360.0) % 360.0
         return self._clone(aspect_deg[np.newaxis, :, :], band_names=["aspect"])
 
     def hillshade(self, azimuth: float = 315.0, elevation: float = 45.0) -> Image:
         """Compute hillshade illumination."""
-        dem = self._data[0]
-        dx = abs(self._transform.a)
-        dy = abs(self._transform.e)
-        gy, gx = np.gradient(dem, dy, dx)
+        gy, gx = self._terrain_gradients()
         slope_rad = np.arctan(np.sqrt(gx**2 + gy**2))
         aspect_rad = np.arctan2(-gx, gy)
 
@@ -1092,8 +1201,15 @@ class Image(EarthObject):
             ys = da.coords["y"].values
             dx = float(xs[1] - xs[0]) if len(xs) > 1 else 1.0
             dy = float(ys[1] - ys[0]) if len(ys) > 1 else -1.0
+            if dy > 0:
+                # Ascending y (south-up, common in NetCDF): flip rows so the image is north-up
+                arr = arr[:, ::-1, :].copy()
+                dy = -dy
+                y_top = float(ys[-1])
+            else:
+                y_top = float(ys[0])
             minx = float(xs[0] - dx / 2.0)
-            maxy = float(ys[0] - dy / 2.0) if dy < 0 else float(ys[-1] + dy / 2.0)
+            maxy = y_top - dy / 2.0
             transform = Affine.translation(minx, maxy) @ Affine.scale(dx, dy)
 
         return cls(arr, transform=transform, crs=crs_str, band_names=band_names, nodata=nodata)

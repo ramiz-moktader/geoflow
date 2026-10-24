@@ -1,10 +1,19 @@
+"""
+Live STAC streaming test against Microsoft Planetary Computer.
+Needs network access and the optional `stac` extra; deselect with `pytest -m "not network"`.
+"""
+
+import pytest
+
+pytest.importorskip("pystac_client")
+pytest.importorskip("odc.stac")
+
 import geoflow as gf
 
-aoi = gf.Rectangle([91.7, 22.2, 91.8, 22.3]) # Very small area to test
 
-try:
-    print("Fetching STAC collection...")
-    # Load Sentinel-2 L2A from Microsoft Planetary Computer
+@pytest.mark.network
+def test_from_stac_sentinel2():
+    aoi = gf.Rectangle([91.7, 22.2, 91.8, 22.3])  # very small area
     collection = gf.ImageCollection.from_stac(
         collection="sentinel-2-l2a",
         catalog="planetary-computer",
@@ -12,14 +21,9 @@ try:
         start="2023-01-01",
         end="2023-01-10",
         limit=5,
-        bands=["B04", "B03", "B02"] # RGB
+        bands=["B04", "B03", "B02"],
     )
-    
-    print(f"Loaded {len(collection)} images lazyily from the cloud!")
-    
+    assert len(collection) > 0
     for img in collection:
-        print(img)
-        print(f"Data shape (bands, y, x): {img._data.shape}")
-        
-except Exception as e:
-    print(f"STAC Error: {e}")
+        assert img.bands == ["B04", "B03", "B02"]
+        assert img.get("stac_item_ids")
