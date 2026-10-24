@@ -31,7 +31,7 @@ pip install "geoflow[all] @ git+https://github.com/ramiz-moktader/geoflow.git"
 | `notebook` | Jupyter widgets, including the interactive layout editor | ✅ |
 | `earthdata` | `earthaccess` backend (direct S3 streaming, `open_granule`) | ❌ install separately |
 
-Without `earthdata`, NASA search, download and login still work through the CMR API and `.netrc`/environment credentials. NASA data needs a free [Earthdata account](https://urs.earthdata.nasa.gov/users/new).
+Without `earthdata`, NASA search, download and login still work through the CMR API and `.netrc`/environment credentials. NASA data needs a free Earthdata account: see the [login guide](https://ramiz-moktader.github.io/geoflow/user_guide/00_earthdata_login/).
 
 > **Google Colab:** use the plain install (or pick only the extras you need) and avoid `earthdata`. `earthaccess` upgrades `fsspec`, which conflicts with Colab's preinstalled `gcsfs`. If pip says "You must restart the runtime", use **Runtime → Restart session** before importing GeoFlow.
 >
@@ -45,27 +45,31 @@ Without `earthdata`, NASA search, download and login still work through the CMR 
 ```python
 import geoflow as gf
 
-# GEE-like declarative data discovery & acquisition
-aoi = gf.Geometry.from_file("study_area.geojson")
+aoi = gf.Rectangle([91.76, 22.27, 91.90, 22.40])  # Chattogram, Bangladesh
 
+# Sentinel-2 from Microsoft Planetary Computer: free, no account needed
+image = (
+    gf.ImageCollection.from_stac(
+        "sentinel-2-l2a", geometry=aoi, start="2024-01-01", end="2024-02-29",
+        bands=["B02", "B03", "B04", "B08", "SCL"], resolution=20,  # metres
+    )
+    .mask_clouds()
+    .median()
+    .clip(aoi)
+)
+ndvi = image.ndvi()
+ndvi.plot_map(cmap="RdYlGn", title="NDVI", save_path="ndvi.png")
+
+# NASA GEDI LiDAR canopy height (needs a free Earthdata login: gf.login())
 gedi = (
     gf.GEDI("L2A")
       .filterBounds(aoi)
-      .filterDate("2021-01-01", "2023-12-31")
+      .filterDate("2022-01-01", "2022-03-31")
       .filterQuality()
       .select(["rh98", "sensitivity"])
+      .load(limit=1)  # downloads matching granules (large files: start small)
 )
-
-# GEE-like raster compositing & index calculation
-image = (
-    gf.ImageCollection("SENTINEL-2")
-      .filterBounds(aoi)
-      .filterDate("2022-01-01", "2022-12-31")
-      .median()
-      .clip(aoi)
-)
-
-ndvi = image.ndvi()
+gdf = gedi.to_geodataframe()
 ```
 
 ---
@@ -93,12 +97,14 @@ import geoflow as gf
 # 1. Define Area of Interest (AOI)
 aoi = gf.Rectangle([91.7, 22.2, 92.0, 22.5], crs="EPSG:4326")
 
-# 2. Acquire & Process GEDI LiDAR
+# 2. Acquire & Process GEDI LiDAR (run gf.login() once first)
 gedi = (
     gf.GEDI("L2A")
       .filterBounds(aoi)
+      .filterDate("2022-01-01", "2022-03-31")
       .filterQuality()
       .select(["rh98", "sensitivity"])
+      .load(limit=1)
 )
 gdf = gedi.to_geodataframe()
 
@@ -289,6 +295,8 @@ GeoFlow goes beyond GEE by adding native spatial statistics, inferential testing
 ## 📚 Documentation & Guides
 
 The full documentation site is at **<https://ramiz-moktader.github.io/geoflow/>**. The same pages are in the [`docs/`](docs/) directory:
+- **[NASA Earthdata Login guide](https://ramiz-moktader.github.io/geoflow/user_guide/00_earthdata_login/)**: Create a free account and connect it to GeoFlow (needed for GEDI and HLS downloads).
+- **[Tutorial: Making Maps](https://ramiz-moktader.github.io/geoflow/user_guide/07_cartography_tutorial/)**: Seven publication-ready maps from free Sentinel-2 data, step by step, no login needed.
 - **[End-to-End Master Tutorial](docs/user_guide/06_end_to_end_tutorial.md)**: Complete research workflow from raw NASA satellite data to spatial ML and publication cartography.
 - **[Detailed API Reference](docs/api_reference/core.md)**: Complete method signatures, parameter tables, and mathematical formulas for all modules.
 - **[Contributor & Architecture Guide](docs/contributing.md)**: Software architecture, `_clone()` pattern, CRS contract, testing conventions, and roadmap.

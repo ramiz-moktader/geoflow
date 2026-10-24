@@ -196,8 +196,8 @@ gf.ImageCollection(
 
 Manages sequences of `Image` granules across space and time.
 
-!!! warning "String constructor gotcha"
-    Calling `gf.ImageCollection("SENTINEL-2")` will treat the string as an iterable of 10 characters rather than loading a collection. To load collections by name, use `gf.ImageCollection.from_earthdata(...)` or `gf.ImageCollection.from_stac(...)`.
+!!! warning "Loading collections by name"
+    `gf.ImageCollection(...)` takes a list of `Image` objects. Passing a dataset name such as `gf.ImageCollection("SENTINEL-2")` raises a `TypeError`. To load imagery, use `gf.ImageCollection.from_stac(...)` (no account needed for Planetary Computer) or `gf.ImageCollection.from_earthdata(...)` (needs an [Earthdata login](../user_guide/00_earthdata_login.md)).
 
 ### Factory Methods (Cloud-Native & NASA Ingestion)
 

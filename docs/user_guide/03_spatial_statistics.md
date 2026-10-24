@@ -13,8 +13,11 @@ Global Moran's I indicates the overall clustering of data in your study area.
 ```python
 import geoflow as gf
 
-# Assuming you have a FeatureCollection with some value like canopy height
-gedi_features = gf.GEDI("L2A").filterBounds(aoi).to_geodataframe()
+# GEDI canopy heights for the area (needs gf.login(); see the Earthdata login guide)
+gedi_features = (
+    gf.GEDI("L2A").filterBounds(aoi).filterDate("2022-01-01", "2022-03-31")
+    .filterQuality().load(limit=1).to_geodataframe()
+)
 
 moran = gf.spatial.morans_i(gedi_features, value="rh98", k=8)
 print(f"Moran's I: {moran.I:.4f}, p-value: {moran.p_value:.4f}")

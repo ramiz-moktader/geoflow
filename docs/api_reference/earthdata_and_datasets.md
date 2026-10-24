@@ -179,6 +179,14 @@ gf.GEDI(
 
 Specialized adapter for NASA Global Ecosystem Dynamics Investigation (GEDI) spaceborne waveform LiDAR data.
 
+!!! warning "Use `GEDI.load()` to get data"
+    `gf.GEDI("L2A")` on its own has no data files: its filters only apply to files you already have. Call `gf.GEDI.load(...)` to search NASA and download granules (this needs an [Earthdata login](../user_guide/00_earthdata_login.md)), or pass `files=[...]` with `.h5` files you downloaded before. GEDI granules are large (often more than 1 GB each), so start with a small `limit`.
+
+    ```python
+    gedi = gf.GEDI.load("L2A", region=aoi, start="2022-01-01", end="2022-03-31", limit=1)
+    gdf = gedi.filterQuality().select(["rh98", "sensitivity"]).to_geodataframe()
+    ```
+
 ### Classmethods & Factory
 
 ```python
@@ -217,5 +225,7 @@ When parsing HDF5 files or working with GEDI point collections:
 - `agbd`: Aboveground Biomass Density in $Mg / ha$ (for Level-4A).
 - `geometry`: `shapely.geometry.Point(longitude, latitude)`.
 
-!!! note "Offline & Synthetic Fallback Behavior"
-    If `.to_geodataframe()` is called on a `GEDI` instance that does **not** contain downloaded `.h5` files, GeoFlow generates a synthetic distribution of realistic GEDI footprints within the AOI bounds. This ensures pipeline prototyping, tests, and student labs can run offline without requiring active NASA Earthdata credentials.
+`.select()` keeps only the variables you list, plus `latitude`, `longitude` and `geometry`. Include `shot_number` or `beam` in the list if you need them.
+
+!!! note "No files, no data"
+    `.to_geodataframe()` raises a `ValueError` on a `GEDI` object without files, and returns an empty GeoDataFrame (with a warning) when no shots pass the region, date and quality filters. GeoFlow never invents synthetic shots.

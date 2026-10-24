@@ -110,12 +110,14 @@ print(f"Composite dimensions: {composite.height} x {composite.width} pixels acro
 Extract 25m footprint canopy top heights ($RH98$) from NASA GEDI Level-2A:
 
 ```python
-# Load GEDI Level-2A data within our AOI
+# Download GEDI Level-2A granules over our AOI (needs gf.login(); granules are large)
 gedi = (
     gf.GEDI("L2A")
     .filterBounds(aoi)
+    .filterDate("2022-01-01", "2022-12-31")
     .filterQuality()  # Retain high-sensitivity, non-degraded shots
-    .select(["rh98", "rh50", "sensitivity", "elevation"])
+    .select(["shot_number", "rh98", "rh50", "sensitivity", "elevation"])
+    .load(limit=2)
 )
 
 # Convert footprint points to a GeoPandas GeoDataFrame and FeatureCollection

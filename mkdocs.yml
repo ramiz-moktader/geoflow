@@ -44,6 +44,8 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - admonition
   - pymdownx.details
   - attr_list
@@ -53,11 +55,13 @@ nav:
   - Home: README.md
   - User Guide:
     - Quickstart: user_guide/01_quickstart.md
+    - NASA Earthdata Login: user_guide/00_earthdata_login.md
     - Images & Collections: user_guide/02_images_and_collections.md
     - Spatial Statistics: user_guide/03_spatial_statistics.md
     - Machine Learning & Validation: user_guide/04_machine_learning.md
     - Cartography & Visualization: user_guide/05_cartography.md
     - End-to-End Tutorial: user_guide/06_end_to_end_tutorial.md
+    - "Tutorial: Making Maps": user_guide/07_cartography_tutorial.md
   - API Reference:
     - Core: api_reference/core.md
     - Raster: api_reference/raster.md

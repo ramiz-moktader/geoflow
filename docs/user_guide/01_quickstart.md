@@ -37,15 +37,18 @@ import geoflow as gf
 # Define an Area of Interest
 aoi = gf.Rectangle([91.7, 22.2, 92.0, 22.5], crs="EPSG:4326")
 
-# Filter an ImageCollection
-collection = (
-    gf.ImageCollection("SENTINEL-2")
-    .filterBounds(aoi)
-    .filterDate("2023-01-01", "2023-12-31")
+# Load Sentinel-2 from Microsoft Planetary Computer (free, no account needed)
+collection = gf.ImageCollection.from_stac(
+    "sentinel-2-l2a",
+    geometry=aoi,
+    start="2024-01-01",
+    end="2024-02-29",
+    bands=["B02", "B03", "B04", "B08", "SCL"],
+    resolution=20,  # pixel size in metres
 )
 
-# Create a composite image
-median_img = collection.median().clip(aoi)
+# Mask clouds and create a composite image
+median_img = collection.mask_clouds().median().clip(aoi)
 
 # Calculate a Vegetation Index
 ndvi = median_img.ndvi()

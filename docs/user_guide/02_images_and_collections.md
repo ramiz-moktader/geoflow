@@ -57,10 +57,14 @@ An `ImageCollection` handles stacks of images (spatiotemporal datacubes).
 You can filter large collections dynamically before processing.
 
 ```python
+# Load a collection from a STAC catalogue, then narrow it down further
 collection = (
-    gf.ImageCollection("LANDSAT-8")
+    gf.ImageCollection.from_stac(
+        "landsat-c2-l2", geometry=aoi, start="2020-01-01", end="2020-12-31",
+        bands=["red", "green", "blue", "nir08"], resolution=30,
+    )
     .filterBounds(aoi)
-    .filterDate("2020-01-01", "2020-12-31")
+    .filterDate("2020-03-01", "2020-05-31")
 )
 ```
 

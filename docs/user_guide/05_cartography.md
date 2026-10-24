@@ -2,6 +2,9 @@
 
 GeoFlow provides tools to generate professional, publication-ready cartographic maps in a single line of code.
 
+!!! tip "New to GeoFlow maps?"
+    Follow the step-by-step [cartography tutorial](07_cartography_tutorial.md): it builds seven maps from free Sentinel-2 data, with every result shown.
+
 ## Plotting Maps
 
 The `plot_map()` method handles scaling, North Arrows, Scale Bars, and complex graticule formatting.

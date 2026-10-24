@@ -10,11 +10,13 @@ It specifically introduces first-class features for **Spatial Statistics**, **Le
 
 ### User Guide
 1. [Quickstart](user_guide/01_quickstart.md)
+1. [NASA Earthdata Login](user_guide/00_earthdata_login.md): create an account and connect it to GeoFlow
 2. [Images and Collections](user_guide/02_images_and_collections.md)
 3. [Spatial Statistics](user_guide/03_spatial_statistics.md)
 4. [Machine Learning and Validation](user_guide/04_machine_learning.md)
 5. [Cartography and Visualization](user_guide/05_cartography.md)
 6. [Comprehensive End-to-End Tutorial](user_guide/06_end_to_end_tutorial.md)
+7. [Tutorial: Making Maps](user_guide/07_cartography_tutorial.md): seven publication maps from free Sentinel-2 data, step by step
 
 ### API Reference
 - [Core (`gf.core`)](api_reference/core.md)

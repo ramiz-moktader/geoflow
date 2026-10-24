@@ -173,21 +173,13 @@ Issues from the codebase audit have been fixed and are covered by `test_audit_re
 | **`login()` verification** | Credentials from environment variables or `~/.netrc` are reported as authenticated without contacting Earthdata. | Validate with a lightweight authenticated request (e.g. URS profile endpoint). |
 | **Variogram memory** | `variogram()` builds all point pairs: memory grows as $O(n^2)$. | Subsample pairs or bin with a KD-tree for large point sets. |
 | **LISA inference** | Local Moran's I uses analytical p-values without multiple-testing correction, so many clusters can be false positives. | Add conditional permutation inference and FDR / Bonferroni correction. |
-| **Spatial ESS** | `effective_sample_size` uses the AR(1) formula with Moran's I as $ho$, a screening heuristic. | Offer variogram- or model-based effective sample sizes. |
+| **Spatial ESS** | `effective_sample_size` uses the AR(1) formula with Moran's I as $\rho$, a screening heuristic. | Offer variogram- or model-based effective sample sizes. |
+| **`CRS` hashing** | `CRS` defines `__eq__` without `__hash__`, so CRS objects can't be used in sets or as dict keys. | Implement `__hash__` from the normalised WKT / EPSG code. |
 | **`Filter` errors** | `Filter.__call__` treats any exception inside a predicate as "no match". | Raise or warn on predicate errors other than missing properties. |
 | **`focal_median` with NaN** | Falls back to a slow `generic_filter` when the band contains NaN. | Use a vectorized NaN-aware median filter. |
 | **Map image overlays** | Rasters are reprojected to EPSG:4326 and drawn on Web Mercator, which stretches large extents in latitude. | Reproject overlays to EPSG:3857 before rendering. |
 | **Downloader filenames** | Files are named by the URL's last path segment; two granules with the same name overwrite each other. | Namespace downloads by collection/granule ID. |
 
----|---|---|
-| **`Image` Operator Overloading** | Implements `__gte__` and `__lte__` instead of standard `__ge__` and `__le__`. Using `>=` or `<=` raises a `TypeError`. | Rename `__gte__` to `__ge__` and `__lte__` to `__le__` in `geoflow/raster/image.py`. |
-| **`ImageCollection` String Init** | `gf.ImageCollection("SENTINEL-2")` iterates over the string characters as items. | Add a type check in `ImageCollection.__init__`: if `isinstance(images, (str, Path))`, either raise a helpful `ValueError` pointing to `from_earthdata` / `from_stac`, or load the collection. |
-| **Hashing & Equality** | `Image` and `CRS` define `__eq__` without `__hash__`, making them unhashable in sets/dicts. | Implement `__hash__` (e.g. using CRS WKT / ID) or document hash behavior. |
-| **`BufferedSpatialCV` Units** | `buffer_distance` is applied directly in dataset CRS units (causing issues if in geographic degrees). | Issue a warning or auto-project to UTM when dataset CRS is geographic and buffer is large ($> 1.0$). |
-| **`leakage_report` Bounding Box** | Flags spatial CV train/val splits as having overlap because their total bounding boxes overlap, even if individual blocks are disjoint. | Refine `has_overlap` to check polygon geometry intersection rather than envelope bounding box. |
-| **`sampling.stratified`** | Currently hardcodes simulated classes `[1, 2, 3]` rather than sampling from the input `strata` raster/vector. | Parse unique values from the input `strata` layer. |
-| **`Image.reproject` Subclassing** | Instantiates `Image(...)` directly instead of preserving subclasses via `self._clone`. | Update `reproject` to propagate custom subclasses. |
-| **Band Name Aliasing** | `ndvi()` auto-detects aliases (`B8`, `B08`), but `evi()` and `ndwi()` default to strict band names. | Extend `_find_band` auto-detection across all spectral index methods. |
 
 ---
 

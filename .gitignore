@@ -13,6 +13,8 @@ site/
 *.png
 *.jpg
 *.html
+# ...except images used by the documentation
+!docs/assets/**
 
 # Extraneous files
 gh.zip
