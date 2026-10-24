@@ -1,0 +1,1950 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python Framework for Earth Data, GIS, Spatial Statistics & Machine Learning">
+      
+      
+        <meta name="author" content="GeoFlow Contributors">
+      
+      
+        <link rel="canonical" href="https://ramiz-moktader.github.io/geoflow/api_reference/core/">
+      
+      
+        <link rel="prev" href="../../user_guide/07_cartography_tutorial/">
+      
+      
+        <link rel="next" href="../raster/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Core - GeoFlow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#core-api-reference-geoflowcore" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GeoFlow" class="md-header__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GeoFlow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Core
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guide/01_quickstart/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributor Guide
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GeoFlow" class="md-nav__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GeoFlow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/01_quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/00_earthdata_login/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NASA Earthdata Login
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/02_images_and_collections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Images & Collections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/03_spatial_statistics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/04_machine_learning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/05_cartography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cartography & Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/06_end_to_end_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/07_cartography_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: Making Maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earthobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EarthObject
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#crs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CRS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproject_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reproject_bounds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check_crs_compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_crs_compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-property-values-are-looked-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How property values are looked up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-combinators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boolean combinators
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reducer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reducer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-reducers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom reducers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../raster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector & Geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../earthdata_and_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Earthdata & Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics & Inference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ml_and_validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../viz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization & Cartography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Line Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributor Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earthobject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EarthObject
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#crs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CRS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproject_bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        reproject_bounds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check_crs_compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_crs_compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filter
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-property-values-are-looked-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How property values are looked up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#temporal-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spatial-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-combinators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boolean combinators
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reducer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reducer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reducer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-reducers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom reducers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="core-api-reference-geoflowcore">Core API Reference (<code>geoflow.core</code>)</h1>
+<p>The core package holds the building blocks shared by every other subsystem.
+Everything here is importable from <code>geoflow.core</code>; <code>Filter</code>, <code>Reducer</code>, <code>CRS</code>
+and <code>reproject_bounds</code> are also re-exported at the top level (<code>gf.Filter</code>, ...).</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Kind</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#earthobject"><code>EarthObject</code></a></td>
+<td>base class</td>
+<td><code>geoflow/core/base.py</code></td>
+</tr>
+<tr>
+<td><a href="#config"><code>config</code></a></td>
+<td>singleton</td>
+<td><code>geoflow/core/config.py</code></td>
+</tr>
+<tr>
+<td><a href="#crs"><code>CRS</code></a></td>
+<td>class</td>
+<td><code>geoflow/core/crs.py</code></td>
+</tr>
+<tr>
+<td><a href="#reproject_bounds"><code>reproject_bounds</code></a></td>
+<td>function</td>
+<td><code>geoflow/core/crs.py</code></td>
+</tr>
+<tr>
+<td><a href="#check_crs_compatibility"><code>check_crs_compatibility</code></a></td>
+<td>function</td>
+<td><code>geoflow/core/crs.py</code></td>
+</tr>
+<tr>
+<td><a href="#filter"><code>Filter</code></a></td>
+<td>class</td>
+<td><code>geoflow/core/filter.py</code></td>
+</tr>
+<tr>
+<td><a href="#reducer"><code>Reducer</code></a></td>
+<td>class</td>
+<td><code>geoflow/core/reducer.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="earthobject"><code>EarthObject</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">EarthObject</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Base class of <code>Image</code>, <code>ImageCollection</code>, <code>Geometry</code>, <code>Feature</code>,
+<code>FeatureCollection</code> and <code>GEDI</code>. It provides a metadata dictionary and a
+provenance log.</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metadata</code></td>
+<td>property → <code>dict</code></td>
+<td>The live metadata dict (mutations are visible).</td>
+</tr>
+<tr>
+<td><code>get</code></td>
+<td><code>get(property_name, default=None)</code></td>
+<td>Read a metadata key.</td>
+</tr>
+<tr>
+<td><code>set</code></td>
+<td><code>set(property_name, value) -&gt; self</code></td>
+<td>Write a metadata key <strong>in place</strong> and return <code>self</code> (unlike GEE, this mutates).</td>
+</tr>
+<tr>
+<td><code>track_action</code></td>
+<td><code>track_action(action_name, params=None)</code></td>
+<td>Append an entry to the provenance log.</td>
+</tr>
+<tr>
+<td><code>history</code></td>
+<td>property → <code>list[dict]</code></td>
+<td>Copy of the provenance log. Starts with a <code>"created"</code> entry (UTC ISO timestamp).</td>
+</tr>
+<tr>
+<td><code>pipe</code></td>
+<td><code>pipe(func, *args, **kwargs)</code></td>
+<td>Returns <code>func(self, *args, **kwargs)</code>, so custom steps can be chained fluently.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Built-in operations do <strong>not</strong> call <code>track_action</code> yet, so <code>history</code>
+only contains the creation entry plus anything you add yourself.</p>
+</div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">img</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"sensor"</span><span class="p">,</span> <span class="s2">"S2A"</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">img</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sensor"</span><span class="p">)</span>                     <span class="c1"># "S2A"</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">img</span><span class="o">.</span><span class="n">pipe</span><span class="p">(</span><span class="k">lambda</span> <span class="n">im</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">im</span> <span class="o">*</span> <span class="n">k</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>   <span class="c1"># same as img * 2.0</span>
+</span></code></pre></div>
+<hr />
+<h2 id="config"><code>config</code></h2>
+<p>Module-level singleton instance of <code>Config</code>. It is created at import time and
+<strong>creates <code>~/.geoflow/cache</code> as a side effect</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Default</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>default_crs</code></td>
+<td><code>"EPSG:4326"</code></td>
+<td>Informational (CLI <code>info</code>).</td>
+</tr>
+<tr>
+<td><code>cache_dir</code></td>
+<td><code>~/.geoflow/cache</code></td>
+<td>Informational.</td>
+</tr>
+<tr>
+<td><code>download_dir</code></td>
+<td><code>&lt;cwd&gt;/data</code></td>
+<td>Informational (downloaders take explicit <code>output_dir</code>).</td>
+</tr>
+<tr>
+<td><code>backend</code></td>
+<td><code>"auto"</code></td>
+<td>Informational (<code>"auto"</code>, <code>"cpu"</code>, <code>"cuda"</code>, <code>"mps"</code>).</td>
+</tr>
+<tr>
+<td><code>workers</code></td>
+<td><code>4</code></td>
+<td>Informational.</td>
+</tr>
+<tr>
+<td><code>strict_crs</code></td>
+<td><code>False</code></td>
+<td>Not enforced yet.</td>
+</tr>
+<tr>
+<td><code>verbose</code></td>
+<td><code>True</code></td>
+<td>Not used yet.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>set_cache_dir(path)</code></td>
+<td>Set and create the cache directory.</td>
+</tr>
+<tr>
+<td><code>set_backend(name)</code></td>
+<td>Validate and set the backend; raises <code>ValueError</code> for unknown names.</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">geoflow.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">config</span><span class="o">.</span><span class="n">set_backend</span><span class="p">(</span><span class="s2">"cuda"</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="crs"><code>CRS</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">CRS</span><span class="p">(</span><span class="n">crs_input</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">pyproj</span><span class="o">.</span><span class="n">CRS</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"EPSG:4326"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Thin wrapper around <code>pyproj.CRS</code>. Accepts anything
+<code>pyproj.CRS.from_user_input</code> accepts (<code>"EPSG:32646"</code>, <code>32646</code>, WKT, PROJ strings).
+<code>None</code> resolves to EPSG:4326.</p>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pyproj_crs</code></td>
+<td><code>pyproj.CRS</code></td>
+<td>Underlying object.</td>
+</tr>
+<tr>
+<td><code>epsg</code></td>
+<td><code>int \| None</code></td>
+<td>EPSG code if one can be determined.</td>
+</tr>
+<tr>
+<td><code>is_geographic</code></td>
+<td><code>bool</code></td>
+<td>Degrees-based CRS.</td>
+</tr>
+<tr>
+<td><code>is_projected</code></td>
+<td><code>bool</code></td>
+<td>Projected CRS (usually metres).</td>
+</tr>
+<tr>
+<td><code>to_string()</code></td>
+<td><code>str</code></td>
+<td><code>"EPSG:xxxx"</code> when possible, otherwise WKT.</td>
+</tr>
+<tr>
+<td><code>==</code></td>
+<td><code>bool</code></td>
+<td>Compares against <code>CRS</code>, <code>str</code>, <code>int</code> or <code>pyproj.CRS</code>.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>CRS</code> defines <code>__eq__</code> without <code>__hash__</code>, so instances <strong>cannot be used as
+dict keys or in sets</strong>. Use <code>crs.to_string()</code> as the key instead.
+<code>str(crs)</code> returns the repr (<code>"CRS('EPSG:4326')"</code>), not <code>"EPSG:4326"</code>.</p>
+</div>
+<hr />
+<h2 id="reproject_bounds"><code>reproject_bounds</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">reproject_bounds</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="n">src_crs</span><span class="p">,</span> <span class="n">dst_crs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">minx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">maxy</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Transforms the four corners of a bounding box and returns their envelope.
+It returns the input unchanged when both CRSs are equal. Only corners are
+sampled, so very large boxes in curved projections can be slightly
+under-estimated.</p>
+<h2 id="check_crs_compatibility"><code>check_crs_compatibility</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">check_crs_compatibility</span><span class="p">(</span><span class="n">crs1</span><span class="p">,</span> <span class="n">crs2</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Emits a <code>UserWarning</code> (it doesn't raise) when two CRSs differ. Used by
+<code>Image</code> band math and <code>Geometry</code> set operations.</p>
+<hr />
+<h2 id="filter"><code>Filter</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Filter</span><span class="p">(</span><span class="n">predicate_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Filter"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>A declarative predicate, modelled on <code>ee.Filter</code>. Filters are callables:
+<code>f(item) -&gt; bool</code>. They are consumed by <code>ImageCollection.filter</code>,
+<code>FeatureCollection.filter</code>, <code>filterBounds</code>, <code>filterDate</code>, and so on.</p>
+<h3 id="how-property-values-are-looked-up">How property values are looked up</h3>
+<p>For a property <code>name</code>, <code>Filter</code> looks in this order:</p>
+<ol>
+<li><code>item[name]</code> if <code>item</code> is a <code>dict</code></li>
+<li><code>item.properties[name]</code> (e.g. <code>Feature</code>)</li>
+<li><code>item.metadata[name]</code> (e.g. <code>Image</code>)</li>
+<li><code>getattr(item, name)</code> (e.g. a pandas row)</li>
+<li>otherwise <code>None</code></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Silent failures</p>
+<p><code>Filter.__call__</code> catches <strong>every exception</strong> and returns <code>False</code>. A typo
+in a property name, or comparing a string to a number, quietly removes all
+items instead of raising. If a filtered collection is unexpectedly empty,
+test the filter against one item by hand.</p>
+</div>
+<h3 id="comparison-filters">Comparison filters</h3>
+<table>
+<thead>
+<tr>
+<th>Classmethod</th>
+<th>GEE alias</th>
+<th>Matches when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eq(name, value)</code></td>
+<td><code>equals</code></td>
+<td><code>value == v</code></td>
+</tr>
+<tr>
+<td><code>neq(name, value)</code></td>
+<td><code>notEquals</code></td>
+<td><code>value != v</code> (also matches when the property is missing)</td>
+</tr>
+<tr>
+<td><code>gt(name, value)</code></td>
+<td><code>greaterThan</code></td>
+<td><code>v &gt; value</code> (missing → <code>False</code>)</td>
+</tr>
+<tr>
+<td><code>gte(name, value)</code></td>
+<td><code>greaterThanOrEquals</code></td>
+<td><code>v &gt;= value</code></td>
+</tr>
+<tr>
+<td><code>lt(name, value)</code></td>
+<td><code>lessThan</code></td>
+<td><code>v &lt; value</code></td>
+</tr>
+<tr>
+<td><code>lte(name, value)</code></td>
+<td><code>lessThanOrEquals</code></td>
+<td><code>v &lt;= value</code></td>
+</tr>
+<tr>
+<td><code>rangeContains(name, lo, hi)</code></td>
+<td>–</td>
+<td><code>lo &lt;= v &lt;= hi</code></td>
+</tr>
+<tr>
+<td><code>inList(name, values)</code></td>
+<td>–</td>
+<td><code>v in values</code></td>
+</tr>
+<tr>
+<td><code>notInList(name, values)</code></td>
+<td>–</td>
+<td><code>v not in values</code></td>
+</tr>
+<tr>
+<td><code>stringContains(name, sub, case_sensitive=True)</code></td>
+<td>–</td>
+<td>substring match (non-strings → <code>False</code>)</td>
+</tr>
+<tr>
+<td><code>stringStartsWith(name, prefix)</code></td>
+<td>–</td>
+<td>prefix match</td>
+</tr>
+<tr>
+<td><code>stringEndsWith(name, suffix)</code></td>
+<td>–</td>
+<td>suffix match</td>
+</tr>
+</tbody>
+</table>
+<h3 id="temporal-filters">Temporal filters</h3>
+<table>
+<thead>
+<tr>
+<th>Classmethod</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>date(start, end)</code></td>
+<td>Inclusive window. <code>start</code>/<code>end</code> can be <code>str</code> (ISO), <code>date</code> or <code>datetime</code>. Strings are truncated to the <strong>date part</strong>.</td>
+</tr>
+<tr>
+<td><code>calendarRange(start, end, field="month")</code></td>
+<td><code>field</code> is <code>"month"</code> (1–12) or <code>"day_of_year"</code> (1–366). Wraps around the year when <code>start &gt; end</code> (e.g. <code>11, 2</code> = Nov–Feb).</td>
+</tr>
+<tr>
+<td><code>dayOfYear(start, end)</code></td>
+<td>Shortcut for <code>calendarRange(..., field="day_of_year")</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The item date is read from the first non-empty of <code>date</code>, <code>datetime</code>,
+<code>timestamp</code> or <code>time_start</code> (<code>calendarRange</code> skips <code>time_start</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Items <strong>without</strong> a parseable date <strong>pass</strong> temporal filters (lenient by
+design). Compact strings such as <code>"2023001T042149"</code> (HLS) cannot be parsed
+and therefore always pass.</p>
+</div>
+<h3 id="spatial-filters">Spatial filters</h3>
+<table>
+<thead>
+<tr>
+<th>Classmethod</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bounds(geometry)</code> / <code>intersects(geometry)</code></td>
+<td><code>geometry</code> can be a <code>Geometry</code>, a Shapely geometry or a <code>[minx, miny, maxx, maxy]</code> list. Uses <code>item.geometry</code> if present, otherwise <code>box(*item.bounds)</code>. <strong>No CRS reprojection is done.</strong> Items with no geometry pass.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="boolean-combinators">Boolean combinators</h3>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Filter.and_(f1, f2, ...)</code></td>
+<td><code>f1 &amp; f2</code></td>
+</tr>
+<tr>
+<td><code>Filter.or_(f1, f2, ...)</code></td>
+<td><code>f1 \| f2</code></td>
+</tr>
+<tr>
+<td><code>Filter.not_(f)</code></td>
+<td><code>~f</code></td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">gf</span><span class="o">.</span><span class="n">Filter</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="s2">"platform"</span><span class="p">,</span> <span class="s2">"Sentinel-2A"</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>     <span class="o">&amp;</span> <span class="n">gf</span><span class="o">.</span><span class="n">Filter</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="s2">"2023-01-01"</span><span class="p">,</span> <span class="s2">"2023-06-30"</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>     <span class="o">&amp;</span> <span class="o">~</span><span class="n">gf</span><span class="o">.</span><span class="n">Filter</span><span class="o">.</span><span class="n">gt</span><span class="p">(</span><span class="s2">"cloud_cover"</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">f</span><span class="p">({</span><span class="s2">"platform"</span><span class="p">:</span> <span class="s2">"Sentinel-2A"</span><span class="p">,</span> <span class="s2">"date"</span><span class="p">:</span> <span class="s2">"2023-03-15"</span><span class="p">,</span> <span class="s2">"cloud_cover"</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>  <span class="c1"># True</span>
+</span></code></pre></div>
+<hr />
+<h2 id="reducer"><code>Reducer</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">Reducer</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Wraps an aggregation function. <code>reducer.reduce(data, axis=None)</code> calls
+<code>fn(data, axis)</code>. Built-in reducers ignore NaN.</p>
+<table>
+<thead>
+<tr>
+<th>Factory</th>
+<th>Output for <code>axis=None</code></th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Reducer.mean()</code></td>
+<td>scalar</td>
+<td><code>np.nanmean</code></td>
+</tr>
+<tr>
+<td><code>Reducer.median()</code></td>
+<td>scalar</td>
+<td><code>np.nanmedian</code></td>
+</tr>
+<tr>
+<td><code>Reducer.min()</code> / <code>max()</code></td>
+<td>scalar</td>
+<td><code>np.nanmin</code> / <code>np.nanmax</code></td>
+</tr>
+<tr>
+<td><code>Reducer.sum()</code></td>
+<td>scalar</td>
+<td><code>np.nansum</code></td>
+</tr>
+<tr>
+<td><code>Reducer.stdDev()</code></td>
+<td>scalar</td>
+<td>population std (<code>ddof=0</code>)</td>
+</tr>
+<tr>
+<td><code>Reducer.variance()</code></td>
+<td>scalar</td>
+<td>population variance</td>
+</tr>
+<tr>
+<td><code>Reducer.count()</code></td>
+<td>int</td>
+<td>number of non-NaN values</td>
+</tr>
+<tr>
+<td><code>Reducer.mode()</code></td>
+<td>scalar</td>
+<td><code>scipy.stats.mode(nan_policy="omit")</code></td>
+</tr>
+<tr>
+<td><code>Reducer.percentile(p)</code></td>
+<td>array of <code>len(p)</code></td>
+<td><code>p</code> is a number or list</td>
+</tr>
+<tr>
+<td><code>Reducer.minMax()</code></td>
+<td><code>(min, max)</code> tuple</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Reducer.histogram(bins=50)</code></td>
+<td><code>{"counts": [...], "edges": [...]}</code></td>
+<td>always flattens and ignores <code>axis</code></td>
+</tr>
+<tr>
+<td><code>Reducer.first()</code> / <code>last()</code></td>
+<td>element</td>
+<td>no NaN skipping</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Collection compositing</p>
+<p><code>ImageCollection</code> composites only work with reducers that return <strong>one
+value per pixel</strong> (<code>mean</code>, <code>median</code>, <code>min</code>, <code>max</code>, <code>sum</code>, <code>stdDev</code>,
+<code>variance</code>, <code>count</code>, <code>mode</code>, <code>first</code>, <code>last</code>). <code>percentile</code>, <code>minMax</code> and
+<code>histogram</code> change the output shape and fail.</p>
+</div>
+<h3 id="custom-reducers">Custom reducers</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">iqr</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">Reducer</span><span class="p">(</span><span class="s2">"iqr"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">))</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">img</span><span class="o">.</span><span class="n">reduceRegion</span><span class="p">(</span><span class="n">iqr</span><span class="p">,</span> <span class="n">geometry</span><span class="o">=</span><span class="n">aoi</span><span class="p">)</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1618 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python Framework for Earth Data, GIS, Spatial Statistics & Machine Learning">
+      
+      
+        <meta name="author" content="GeoFlow Contributors">
+      
+      
+        <link rel="canonical" href="https://ramiz-moktader.github.io/geoflow/user_guide/07_cartography_tutorial/">
+      
+      
+        <link rel="prev" href="../06_end_to_end_tutorial/">
+      
+      
+        <link rel="next" href="../../api_reference/core/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Tutorial: Making Maps - GeoFlow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-making-maps-with-geoflow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GeoFlow" class="md-header__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GeoFlow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tutorial: Making Maps
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../01_quickstart/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api_reference/core/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributor Guide
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GeoFlow" class="md-nav__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GeoFlow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../00_earthdata_login/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NASA Earthdata Login
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_images_and_collections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Images & Collections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_spatial_statistics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04_machine_learning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05_cartography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cartography & Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06_end_to_end_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: Making Maps
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: Making Maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-choose-your-area" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Choose your area
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-load-a-cloud-free-sentinel-2-composite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Load a cloud-free Sentinel-2 composite
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-true-colour-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: True-colour map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-vegetation-index-map-with-a-colour-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Vegetation index map with a colour bar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-style-the-graticule-for-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Style the graticule for publication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-classified-map-with-a-legend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Classified map with a legend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-vector-map-summarise-by-hexagon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Vector map: summarise by hexagon
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-multi-panel-figure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Multi-panel figure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-design-the-layout-interactively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Design the layout interactively
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/raster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/vector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector & Geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/earthdata_and_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Earthdata & Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/spatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics & Inference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/ml_and_validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/viz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization & Cartography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Line Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributor Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-choose-your-area" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Choose your area
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-load-a-cloud-free-sentinel-2-composite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Load a cloud-free Sentinel-2 composite
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-true-colour-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: True-colour map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-vegetation-index-map-with-a-colour-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Vegetation index map with a colour bar
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-style-the-graticule-for-publication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Style the graticule for publication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-classified-map-with-a-legend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Classified map with a legend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-vector-map-summarise-by-hexagon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Vector map: summarise by hexagon
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-multi-panel-figure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Multi-panel figure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-design-the-layout-interactively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Design the layout interactively
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tutorial-making-maps-with-geoflow">Tutorial: Making Maps with GeoFlow</h1>
+<p>This tutorial builds seven publication-ready maps of <strong>Chattogram, Bangladesh</strong> from free Sentinel-2 imagery. Every map on this page was produced by the code shown, exactly as written.</p>
+<p><strong>You'll learn to:</strong></p>
+<ul>
+<li>load a cloud-free satellite composite in a few lines</li>
+<li>make true-colour and index maps with north arrows, scale bars and coordinates</li>
+<li>style the graticule (coordinate grid) for journals</li>
+<li>make classified maps with legends, and vector (polygon) maps</li>
+<li>combine maps into multi-panel figures</li>
+<li>design a layout interactively in a notebook</li>
+</ul>
+<p><strong>Requirements:</strong> <code>pip install "geoflow[stac] @ git+https://github.com/ramiz-moktader/geoflow.git"</code> and an internet connection. No account or login is needed, because the imagery comes from <a href="https://planetarycomputer.microsoft.com/">Microsoft Planetary Computer</a>. It runs in Jupyter, VS Code or Google Colab.</p>
+<hr />
+<h2 id="step-1-choose-your-area">Step 1: Choose your area</h2>
+<p>Maps start with an area of interest (AOI). <code>gf.Rectangle</code> takes <code>[west, south, east, north]</code> in degrees:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">geoflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gf</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">aoi</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">([</span><span class="mf">91.76</span><span class="p">,</span> <span class="mf">22.27</span><span class="p">,</span> <span class="mf">91.90</span><span class="p">,</span> <span class="mf">22.40</span><span class="p">],</span> <span class="n">crs</span><span class="o">=</span><span class="s2">"EPSG:4326"</span><span class="p">)</span>  <span class="c1"># Chattogram city and the Karnaphuli river</span>
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Use your own area</p>
+<p>Find coordinates by right-clicking a spot in Google Maps, or draw a box at <a href="http://bboxfinder.com">bboxfinder.com</a>. Keep the box under about 30 × 30 km while you experiment: larger areas take longer to load. You can also load a boundary file with <code>gf.Geometry.from_file("study_area.geojson")</code>.</p>
+</div>
+<h2 id="step-2-load-a-cloud-free-sentinel-2-composite">Step 2: Load a cloud-free Sentinel-2 composite</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">s2</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">ImageCollection</span><span class="o">.</span><span class="n">from_stac</span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">collection</span><span class="o">=</span><span class="s2">"sentinel-2-l2a"</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">catalog</span><span class="o">=</span><span class="s2">"planetary-computer"</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">geometry</span><span class="o">=</span><span class="n">aoi</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">start</span><span class="o">=</span><span class="s2">"2024-01-01"</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">end</span><span class="o">=</span><span class="s2">"2024-02-29"</span><span class="p">,</span>                          <span class="c1"># dry season: fewest clouds over Bangladesh</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">"B02"</span><span class="p">,</span> <span class="s2">"B03"</span><span class="p">,</span> <span class="s2">"B04"</span><span class="p">,</span> <span class="s2">"B08"</span><span class="p">,</span> <span class="s2">"SCL"</span><span class="p">],</span>  <span class="c1"># blue, green, red, near-infrared, scene classification</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">resolution</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>                             <span class="c1"># pixel size in metres</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">)</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">image</span> <span class="o">=</span> <span class="n">s2</span><span class="o">.</span><span class="n">mask_clouds</span><span class="p">()</span><span class="o">.</span><span class="n">median</span><span class="p">()</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">aoi</span><span class="p">)</span>
+</span></code></pre></div>
+<p>What each part does:</p>
+<ul>
+<li><code>from_stac(...)</code> finds every Sentinel-2 scene over the AOI in those dates (24 here) and streams only the pixels inside the box.</li>
+<li><code>mask_clouds()</code> uses the <code>SCL</code> band to remove cloudy and shadowed pixels from each scene.</li>
+<li><code>median()</code> takes the middle value of each pixel across all scenes, which removes any leftover clouds.</li>
+<li><code>clip(aoi)</code> trims the result to your box.</li>
+</ul>
+<h2 id="step-3-true-colour-map">Step 3: True-colour map</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">image</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">"B04"</span><span class="p">,</span> <span class="s2">"B03"</span><span class="p">,</span> <span class="s2">"B02"</span><span class="p">],</span>  <span class="c1"># red, green, blue</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"Chattogram, Bangladesh"</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">subtitle</span><span class="o">=</span><span class="s2">"Sentinel-2 L2A true colour, Jan–Feb 2024 median"</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">save_path</span><span class="o">=</span><span class="s2">"01_true_color.png"</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="True-colour Sentinel-2 map of Chattogram with north arrow, scale bar and latitude/longitude labels" src="../../assets/cartography/01_true_color.jpg" /></p>
+<p>One call adds the <strong>north arrow</strong>, a <strong>scale bar</strong> whose length is computed for your latitude, <strong>degree-formatted coordinates</strong> and a light <strong>grid</strong>. Colours are stretched automatically between the 2nd and 98th percentile, so the image is never too dark or washed out. <code>save_path</code> writes a 300 DPI file by default: change it with <code>dpi=600</code> for print.</p>
+<h2 id="step-4-vegetation-index-map-with-a-colour-bar">Step 4: Vegetation index map with a colour bar</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">ndvi</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">ndvi</span><span class="p">()</span>  <span class="c1"># finds the NIR (B08) and red (B04) bands automatically</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">ndvi</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlGn"</span><span class="p">,</span>          <span class="c1"># red = bare/water, green = vegetation</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>    <span class="c1"># fix the colour range so different maps are comparable</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"Vegetation index (NDVI)"</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">colorbar_label</span><span class="o">=</span><span class="s2">"NDVI"</span><span class="p">,</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">save_path</span><span class="o">=</span><span class="s2">"02_ndvi.png"</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="NDVI map with a red-yellow-green colour bar" src="../../assets/cartography/02_ndvi.jpg" /></p>
+<p>Other indices work the same way: <code>image.ndwi()</code> (water), <code>image.ndbi()</code> (built-up), <code>image.evi()</code>, <code>image.nbr()</code> (burn severity). Any <a href="https://matplotlib.org/stable/users/explain/colors/colormaps.html">Matplotlib colour map</a> name works for <code>cmap</code>.</p>
+<h2 id="step-5-style-the-graticule-for-publication">Step 5: Style the graticule for publication</h2>
+<p>Journals often want coordinates on all four sides, latitude labels rotated, degrees-and-minutes, and a serif font:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">ndvi</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlGn"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"NDVI with a four-sided graticule"</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">colorbar_label</span><span class="o">=</span><span class="s2">"NDVI"</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">show_top</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>   <span class="c1"># labels on all four sides</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">lat_orientation</span><span class="o">=</span><span class="s2">"vertical"</span><span class="p">,</span>       <span class="c1"># rotate latitude labels to run along the frame</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">coord_format</span><span class="o">=</span><span class="s2">"DM"</span><span class="p">,</span>                <span class="c1"># degrees and minutes: "DD", "DM" or "DMS"</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">corner_threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>             <span class="c1"># hide labels within 10% of a corner so they don't collide</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">tick_fontfamily</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">tick_fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">grid_style</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">grid_alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>  <span class="c1"># dashed, faint grid lines</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">north_loc</span><span class="o">=</span><span class="s2">"top-left"</span><span class="p">,</span>             <span class="c1"># move the north arrow ...</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>    <span class="n">scale_loc</span><span class="o">=</span><span class="s2">"bottom-right"</span><span class="p">,</span>         <span class="c1"># ... and the scale bar</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="n">save_path</span><span class="o">=</span><span class="s2">"03_graticule.png"</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="NDVI map with coordinates on four sides in degrees and minutes" src="../../assets/cartography/03_graticule.jpg" /></p>
+<div class="admonition tip">
+<p class="admonition-title">Overlapping corner labels?</p>
+<p>Labels near the corners are hidden when they fall within <code>corner_threshold</code> of a corner (2.5% of the map by default). Rotated or long labels such as <code>22° 16.8' N</code> need more room, so raise it to <code>0.1</code> as above. Use <code>prune_corners="x"</code> or <code>"y"</code> to hide only one axis's corner labels, or <code>graticule_interval=0.02</code> to set the label spacing in degrees yourself.</p>
+</div>
+<h2 id="step-6-classified-map-with-a-legend">Step 6: Classified map with a legend</h2>
+<p>Turn continuous values into classes with <code>discrete_bins</code> (the class boundaries) and <code>discrete_colors</code>, and label them with <code>legend_labels</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">classes</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="s2">"Water"</span><span class="p">:</span> <span class="s2">"#2563eb"</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="s2">"Built-up / bare"</span><span class="p">:</span> <span class="s2">"#d6d3d1"</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="s2">"Sparse vegetation"</span><span class="p">:</span> <span class="s2">"#bef264"</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="s2">"Dense vegetation"</span><span class="p">:</span> <span class="s2">"#15803d"</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">ndvi</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">discrete_bins</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span>  <span class="c1"># 4 classes need 5 boundaries</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">discrete_colors</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">classes</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">legend_labels</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">legend_title</span><span class="o">=</span><span class="s2">"Land cover (NDVI classes)"</span><span class="p">,</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="n">legend_loc</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">,</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"Simple land-cover classes"</span><span class="p">,</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="n">save_path</span><span class="o">=</span><span class="s2">"04_classes.png"</span><span class="p">,</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="Land-cover classes map with a four-entry legend" src="../../assets/cartography/04_classes.png" /></p>
+<p>Boundaries are inclusive on the left: here <code>0.0 ≤ NDVI &lt; 0.2</code> is "Built-up / bare". These NDVI thresholds are a simple illustration. For a real land-cover map, train a classifier on labelled samples (see <a href="../04_machine_learning/">Machine Learning &amp; Validation</a>).</p>
+<h2 id="step-7-vector-map-summarise-by-hexagon">Step 7: Vector map: summarise by hexagon</h2>
+<p><code>plot_map</code> also works on vector data (<code>gf.FeatureCollection</code>). Pass the column to colour by in <code>bands</code> and <code>legend=True</code> for a colour bar. Here we cover the area with 1.5 km hexagons and colour each by the NDVI at its centre:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">hexes</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">block</span><span class="p">(</span><span class="n">aoi</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"meters"</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="s2">"hexagonal"</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">gdf</span> <span class="o">=</span> <span class="n">hexes</span><span class="o">.</span><span class="n">to_geodataframe</span><span class="p">()</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># NDVI value at each hexagon's centre point (centroids computed in metres, UTM zone 46N)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">centres</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="mi">32646</span><span class="p">)</span><span class="o">.</span><span class="n">centroid</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="mi">4326</span><span class="p">)))</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">gdf</span><span class="p">[</span><span class="s2">"mean_ndvi"</span><span class="p">]</span> <span class="o">=</span> <span class="n">centres</span><span class="o">.</span><span class="n">sample_raster</span><span class="p">(</span><span class="n">ndvi</span><span class="p">)</span><span class="o">.</span><span class="n">to_geodataframe</span><span class="p">()[</span><span class="s2">"NDVI"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">gf</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"mean_ndvi"</span><span class="p">]))</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">"mean_ndvi"</span><span class="p">],</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">cmap</span><span class="o">=</span><span class="s2">"YlGn"</span><span class="p">,</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">colorbar_label</span><span class="o">=</span><span class="s2">"Mean NDVI"</span><span class="p">,</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"NDVI at hexagon centres (1.5 km cells)"</span><span class="p">,</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">save_path</span><span class="o">=</span><span class="s2">"05_hexagons.png"</span><span class="p">,</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="Hexagon grid coloured by NDVI with a labelled colour bar" src="../../assets/cartography/05_hexagons.png" /></p>
+<p>The same works for any polygons, lines or points: district boundaries from a shapefile (<code>gf.FeatureCollection("districts.shp")</code>), GPS survey points, or GEDI LiDAR shots.</p>
+<h2 id="step-8-multi-panel-figure">Step 8: Multi-panel figure</h2>
+<p>Pass a Matplotlib axis with <code>ax=</code> to place several maps in one figure:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">))</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">image</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span><span class="n">bands</span><span class="o">=</span><span class="p">[</span><span class="s2">"B04"</span><span class="p">,</span> <span class="s2">"B03"</span><span class="p">,</span> <span class="s2">"B02"</span><span class="p">],</span> <span class="n">title</span><span class="o">=</span><span class="s2">"(a) True colour"</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>               <span class="n">graticule_interval</span><span class="o">=</span><span class="mf">0.04</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">ndvi</span><span class="o">.</span><span class="n">plot_map</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlGn"</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"(b) NDVI"</span><span class="p">,</span> <span class="n">colorbar_label</span><span class="o">=</span><span class="s2">"NDVI"</span><span class="p">,</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>              <span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span> <span class="n">graticule_interval</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>              <span class="n">north_arrow</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_left</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># avoid repeating elements</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"06_two_panel.png"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">"tight"</span><span class="p">)</span>
+</span></code></pre></div>
+<p><img alt="Two maps side by side: true colour and NDVI" src="../../assets/cartography/06_two_panel.jpg" /></p>
+<p><code>graticule_interval=0.04</code> puts a label every 0.04° so the smaller panels don't get crowded. Shared elements such as the north arrow and scale bar only need to appear once.</p>
+<h2 id="step-9-design-the-layout-interactively">Step 9: Design the layout interactively</h2>
+<p>In a notebook (Jupyter, VS Code or Google Colab), <code>edit_layout()</code> opens a layout designer, similar to the print layout view in ArcGIS Pro or QGIS. This example loads a GeoTIFF you already have, here one uploaded to Colab:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">geoflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gf</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">img</span> <span class="o">=</span> <span class="n">gf</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="s2">"/content/Sentinel2_Chattogram_2025_01_25.tif"</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Launch the interactive Layout Editor</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">editor</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">ndvi</span><span class="p">()</span><span class="o">.</span><span class="n">edit_layout</span><span class="p">(</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">"Study Area — NDVI"</span><span class="p">,</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">subtitle</span><span class="o">=</span><span class="s2">"Sentinel-2 MSI Level-2A"</span><span class="p">,</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="n">cmap</span><span class="o">=</span><span class="s2">"RdYlGn"</span><span class="p">,</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="p">)</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># Display the editor widget in the notebook</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">editor</span>
+</span></code></pre></div>
+<p>The editor shows a live preview next to tabs of controls:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>What you can change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📄 <strong>Page Setup</strong></td>
+<td>Canvas size (square, landscape, Nature single/double column), title and subtitle</td>
+</tr>
+<tr>
+<td>🧭 <strong>Carto</strong></td>
+<td>North arrow and scale bar: show/hide, corner or exact X/Y position, size, scale bar length</td>
+</tr>
+<tr>
+<td>🗺️ <strong>Frame</strong></td>
+<td>Zoom, pan, or type the exact map extent in coordinates</td>
+</tr>
+<tr>
+<td>🌐 <strong>Graticule</strong></td>
+<td>Coordinate labels on each side, orientation, decimal precision, grid style</td>
+</tr>
+<tr>
+<td>🎨 <strong>Colors</strong></td>
+<td>15+ colour maps, stretch limits, colour bar</td>
+</tr>
+<tr>
+<td>💾 <strong>Export Canvas</strong></td>
+<td>Paper size and orientation, save at 300 or 600 DPI, one-click download in Colab, and <strong>📋 Python Code</strong> to get the equivalent <code>plot_map(...)</code> call</td>
+</tr>
+</tbody>
+</table>
+<p>The preview starts from the same defaults as <code>plot_map</code>. With the settings above, the starting map looks like this:</p>
+<p><img alt="Starting preview of the layout editor: NDVI map titled Study Area — NDVI" src="../../assets/cartography/07_layout_editor_preview.jpg" /></p>
+<div class="admonition tip">
+<p class="admonition-title">From the editor to a script</p>
+<p>When the layout looks right, use <strong>Export Canvas → 📋 Python Code</strong> and paste the <code>plot_map(...)</code> call into your script. Your figure is then reproducible and can be regenerated whenever the data changes.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Using your own GeoTIFF</p>
+<p><code>gf.Image("file.tif")</code> opens any GeoTIFF, for example one exported from Google Earth Engine or downloaded from USGS EarthExplorer. To save GeoFlow imagery as a GeoTIFF, use <code>image.save("composite.tif")</code>. In Colab, upload files with the 📁 <strong>Files</strong> panel on the left; they appear under <code>/content/</code>.</p>
+</div>
+<hr />
+<h2 id="quick-reference">Quick reference</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Choose bands / colours</td>
+<td><code>bands=[...]</code>, <code>cmap=</code>, <code>vmin=</code>, <code>vmax=</code></td>
+</tr>
+<tr>
+<td>Titles</td>
+<td><code>title=</code>, <code>subtitle=</code>, <code>title_fontsize=</code>, <code>subtitle_fontsize=</code></td>
+</tr>
+<tr>
+<td>North arrow</td>
+<td><code>north_arrow=</code>, <code>north_loc=</code> (<code>"top-right"</code>, <code>"top-left"</code>, ...), <code>north_pos=(x, y)</code>, <code>north_size=</code></td>
+</tr>
+<tr>
+<td>Scale bar</td>
+<td><code>scale_bar=</code>, <code>scale_loc=</code>, <code>scale_pos=(x, y)</code>, <code>scale_fraction=</code>, <code>scale_custom_length_m=</code></td>
+</tr>
+<tr>
+<td>Coordinates</td>
+<td><code>coord_format=</code> (<code>"DD"</code>, <code>"DM"</code>, <code>"DMS"</code>), <code>degree_precision=</code>, <code>graticule_interval=</code>, <code>show_top/bottom/left/right=</code></td>
+</tr>
+<tr>
+<td>Label style</td>
+<td><code>lat_orientation=</code>, <code>lon_orientation=</code>, <code>tick_fontsize=</code>, <code>tick_fontfamily=</code>, <code>tick_color=</code></td>
+</tr>
+<tr>
+<td>Corner collisions</td>
+<td><code>prune_corners=</code> (<code>True</code>, <code>"x"</code>, <code>"y"</code>, <code>"both"</code>), <code>corner_threshold=</code></td>
+</tr>
+<tr>
+<td>Grid</td>
+<td><code>grid=</code>, <code>grid_style=</code>, <code>grid_color=</code>, <code>grid_alpha=</code></td>
+</tr>
+<tr>
+<td>Colour bar / legend</td>
+<td><code>colorbar=</code>, <code>colorbar_label=</code>, <code>legend=</code>, <code>legend_labels=</code>, <code>legend_title=</code>, <code>legend_loc=</code></td>
+</tr>
+<tr>
+<td>Classes</td>
+<td><code>discrete_bins=</code>, <code>discrete_colors=</code></td>
+</tr>
+<tr>
+<td>Output</td>
+<td><code>save_path=</code>, <code>dpi=</code>, <code>ax=</code> (multi-panel)</td>
+</tr>
+</tbody>
+</table>
+<p>The full list with defaults is in the <a href="../../api_reference/viz/">Visualization &amp; Cartography API reference</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

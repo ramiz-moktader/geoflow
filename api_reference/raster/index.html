@@ -1,0 +1,2221 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python Framework for Earth Data, GIS, Spatial Statistics & Machine Learning">
+      
+      
+        <meta name="author" content="GeoFlow Contributors">
+      
+      
+        <link rel="canonical" href="https://ramiz-moktader.github.io/geoflow/api_reference/raster/">
+      
+      
+        <link rel="prev" href="../core/">
+      
+      
+        <link rel="next" href="../vector/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Raster - GeoFlow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#raster-api-reference-geoflowraster" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="GeoFlow" class="md-header__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            GeoFlow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Raster
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user_guide/01_quickstart/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../core/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributor Guide
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="GeoFlow" class="md-nav__button md-logo" aria-label="GeoFlow" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    GeoFlow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ramiz-moktader/geoflow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ramiz-moktader/geoflow
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/01_quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/00_earthdata_login/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NASA Earthdata Login
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/02_images_and_collections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Images & Collections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/03_spatial_statistics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/04_machine_learning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/05_cartography/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cartography & Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/06_end_to_end_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user_guide/07_cartography_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial: Making Maps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raster
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Raster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructors-factories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructors &amp; Factories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#band-selection-renaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Band Selection &amp; Renaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#band-math-arithmetic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Band Math &amp; Arithmetic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Band Math &amp; Arithmetic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparison-operators-thresholding-masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison Operators (Thresholding Masks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expressions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spectral-indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spectral Indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#masking-qa-cloud-filtering-radiometric-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Masking, QA Cloud Filtering &amp; Radiometric Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#focal-neighborhood-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Focal &amp; Neighborhood Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terrain-analysis-dem-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terrain Analysis (DEM Operations)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zonal-reductions-regional-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zonal Reductions &amp; Regional Aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualization-cartographic-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualization &amp; Cartographic Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#imagecollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageCollection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageCollection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#factory-methods-cloud-native-nasa-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Factory Methods (Cloud-Native &amp; NASA Ingestion)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-filtering-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection Filtering &amp; Transformation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compositing-reductions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositing &amp; Reductions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4d-datacubes-xarray-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4D Datacubes &amp; Xarray Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vector/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vector & Geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../earthdata_and_datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Earthdata & Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spatial Statistics & Inference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ml_and_validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Learning & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../viz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualization & Cartography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Line Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributor Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#constructors-factories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constructors &amp; Factories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#band-selection-renaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Band Selection &amp; Renaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#band-math-arithmetic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Band Math &amp; Arithmetic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Band Math &amp; Arithmetic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#comparison-operators-thresholding-masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison Operators (Thresholding Masks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expressions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spectral-indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spectral Indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#masking-qa-cloud-filtering-radiometric-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Masking, QA Cloud Filtering &amp; Radiometric Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#focal-neighborhood-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Focal &amp; Neighborhood Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#terrain-analysis-dem-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terrain Analysis (DEM Operations)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zonal-reductions-regional-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zonal Reductions &amp; Regional Aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualization-cartographic-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualization &amp; Cartographic Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#imagecollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageCollection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageCollection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#factory-methods-cloud-native-nasa-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Factory Methods (Cloud-Native &amp; NASA Ingestion)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-filtering-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Collection Filtering &amp; Transformation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compositing-reductions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositing &amp; Reductions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4d-datacubes-xarray-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4D Datacubes &amp; Xarray Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="raster-api-reference-geoflowraster">Raster API Reference (<code>geoflow.raster</code>)</h1>
+<p>The raster subsystem provides Google Earth Engine-compatible <code>Image</code> (or <code>Raster</code>) and <code>ImageCollection</code> (or <code>RasterCollection</code>) objects that execute natively in Python on NumPy arrays and rasterio transforms, with first-class <code>xarray</code> and <code>rioxarray</code> integration.</p>
+<table>
+<thead>
+<tr>
+<th>Class / Alias</th>
+<th>Source File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#image"><code>Image</code></a> (alias: <code>Raster</code>)</td>
+<td><code>geoflow/raster/image.py</code></td>
+<td>Multi-band geospatial raster representation</td>
+</tr>
+<tr>
+<td><a href="#imagecollection"><code>ImageCollection</code></a> (alias: <code>RasterCollection</code>)</td>
+<td><code>geoflow/raster/collection.py</code></td>
+<td>Spatiotemporal collection of <code>Image</code> granules</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="image"><code>Image</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">gf</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Image</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">transform</span><span class="p">:</span> <span class="n">Affine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">crs</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">CRS</span> <span class="o">=</span> <span class="s2">"EPSG:4326"</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">band_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">nodata</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Wraps multi-band raster data. Inherits from <a href="../core/#earthobject"><code>EarthObject</code></a>.</p>
+<h3 id="constructors-factories">Constructors &amp; Factories</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>open</code> / <code>from_file</code></td>
+<td><code>open(filepath, band_names=None, **kwargs) -&gt; Image</code></td>
+<td>Open a single raster file (GeoTIFF, etc.) via rasterio.</td>
+</tr>
+<tr>
+<td><code>from_files</code></td>
+<td><code>from_files(filepaths: list[str | Path], band_names=None) -&gt; Image</code></td>
+<td>Stack multiple single-band rasters into a single multi-band <code>Image</code>. Auto-detects band names from file suffixes (e.g., <code>...B04.tif</code> -&gt; <code>"B04"</code>).</td>
+</tr>
+<tr>
+<td><code>from_xarray</code></td>
+<td><code>from_xarray(da: xarray.DataArray) -&gt; Image</code></td>
+<td>Reconstructs a GeoFlow <code>Image</code> from an xarray DataArray, extracting spatial transform and CRS from <code>.rio</code> or coordinates.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="properties">Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.data</code></td>
+<td><code>np.ndarray</code></td>
+<td>Raw 3D NumPy array of shape <code>(bands, height, width)</code> with <code>float32</code> dtype.</td>
+</tr>
+<tr>
+<td><code>.shape</code></td>
+<td><code>tuple[int, int, int]</code></td>
+<td>Dimensions <code>(bands, height, width)</code>.</td>
+</tr>
+<tr>
+<td><code>.bands</code></td>
+<td><code>list[str]</code></td>
+<td>List of band names (e.g. <code>["B2", "B3", "B4", "B8"]</code>).</td>
+</tr>
+<tr>
+<td><code>.count</code></td>
+<td><code>int</code></td>
+<td>Number of spectral bands.</td>
+</tr>
+<tr>
+<td><code>.height</code></td>
+<td><code>int</code></td>
+<td>Height in pixels (rows).</td>
+</tr>
+<tr>
+<td><code>.width</code></td>
+<td><code>int</code></td>
+<td>Width in pixels (columns).</td>
+</tr>
+<tr>
+<td><code>.transform</code></td>
+<td><code>rasterio.Affine</code></td>
+<td>Affine geotransform matrix mapping pixel coordinates to CRS space.</td>
+</tr>
+<tr>
+<td><code>.crs</code></td>
+<td><code>CRS</code></td>
+<td>Coordinate Reference System wrapper.</td>
+</tr>
+<tr>
+<td><code>.nodata</code></td>
+<td><code>float</code></td>
+<td>Always <code>np.nan</code>: nodata values (and dataset masks) are converted to NaN when an image is loaded or created with <code>nodata=</code>.</td>
+</tr>
+<tr>
+<td><code>.bounds</code></td>
+<td><code>tuple[float, float, float, float]</code></td>
+<td>Spatial extent as <code>(minx, miny, maxx, maxy)</code>.</td>
+</tr>
+<tr>
+<td><code>.geometry</code></td>
+<td><code>Geometry</code></td>
+<td>Bounding rectangle geometry in the image's CRS.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="band-selection-renaming">Band Selection &amp; Renaming</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.select(bands, new_names=None)</code></td>
+<td>Select one or more bands by string name or integer 0-index. Returns a new <code>Image</code>. Optional <code>new_names</code> renames the selected bands.</td>
+</tr>
+<tr>
+<td><code>.rename(new_names)</code></td>
+<td>Renames all bands in the current image. Length of <code>new_names</code> must match <code>.count</code>.</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">b4_b8</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">select</span><span class="p">([</span><span class="s2">"B4"</span><span class="p">,</span> <span class="s2">"B8"</span><span class="p">],</span> <span class="n">new_names</span><span class="o">=</span><span class="p">[</span><span class="s2">"Red"</span><span class="p">,</span> <span class="s2">"NIR"</span><span class="p">])</span>
+</span></code></pre></div>
+<h3 id="band-math-arithmetic">Band Math &amp; Arithmetic</h3>
+<p>Arithmetic operations can be performed using native Python operators or method equivalents:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Operator</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.add(other)</code></td>
+<td><code>+</code></td>
+<td>Pixel-wise addition with a scalar or another <code>Image</code>.</td>
+</tr>
+<tr>
+<td><code>.subtract(other)</code></td>
+<td><code>-</code></td>
+<td>Pixel-wise subtraction.</td>
+</tr>
+<tr>
+<td><code>.multiply(other)</code></td>
+<td><code>*</code></td>
+<td>Pixel-wise multiplication.</td>
+</tr>
+<tr>
+<td><code>.divide(other)</code></td>
+<td><code>/</code></td>
+<td>Safe pixel-wise division (divide-by-zero produces <code>np.nan</code> without crashing).</td>
+</tr>
+<tr>
+<td><code>.pow(power)</code></td>
+<td><code>**</code></td>
+<td>Exponentiation.</td>
+</tr>
+<tr>
+<td><code>.abs()</code></td>
+<td>–</td>
+<td>Absolute value.</td>
+</tr>
+<tr>
+<td><code>.sqrt()</code></td>
+<td>–</td>
+<td>Square root (negative values produce <code>np.nan</code>).</td>
+</tr>
+<tr>
+<td><code>.log()</code>, <code>.log10()</code></td>
+<td>–</td>
+<td>Natural logarithm and Base-10 logarithm.</td>
+</tr>
+<tr>
+<td><code>.exp()</code></td>
+<td>–</td>
+<td>Exponential function ($e^x$).</td>
+</tr>
+<tr>
+<td><code>.sin()</code>, <code>.cos()</code>, <code>.tan()</code></td>
+<td>–</td>
+<td>Trigonometric functions.</td>
+</tr>
+<tr>
+<td><code>.floor()</code>, <code>.ceil()</code>, <code>.round()</code></td>
+<td>–</td>
+<td>Rounding functions.</td>
+</tr>
+<tr>
+<td><code>__neg__()</code></td>
+<td><code>-img</code></td>
+<td>Negates array values.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="comparison-operators-thresholding-masks">Comparison Operators (Thresholding Masks)</h4>
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Operator</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>img &gt; threshold</code></td>
+<td><code>__gt__</code></td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+<tr>
+<td><code>img &gt;= threshold</code></td>
+<td><code>__ge__</code> (alias: <code>__gte__</code>)</td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+<tr>
+<td><code>img &lt; threshold</code></td>
+<td><code>__lt__</code></td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+<tr>
+<td><code>img &lt;= threshold</code></td>
+<td><code>__le__</code> (alias: <code>__lte__</code>)</td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+<tr>
+<td><code>img == other</code></td>
+<td><code>__eq__</code></td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+<tr>
+<td><code>img != other</code></td>
+<td><code>__ne__</code></td>
+<td>1.0 where true, 0.0 where false</td>
+</tr>
+</tbody>
+</table>
+<h3 id="expressions">Expressions</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">img</span><span class="o">.</span><span class="n">expression</span><span class="p">(</span><span class="n">expr_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">band_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Image</span> <span class="o">|</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span>
+</span></code></pre></div>
+<p>Evaluates a mathematical string expression with band variables and mathematical functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>log</code>, <code>exp</code>, <code>sqrt</code>, <code>abs</code>).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Variables from dictionary or automatically inferred from image band names</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">custom_index</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">expression</span><span class="p">(</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">"(2.5 * (NIR - RED)) / (NIR + 6.0 * RED - 7.5 * BLUE + 1.0)"</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="p">{</span><span class="s2">"NIR"</span><span class="p">:</span> <span class="n">img</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">"B8"</span><span class="p">),</span> <span class="s2">"RED"</span><span class="p">:</span> <span class="n">img</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">"B4"</span><span class="p">),</span> <span class="s2">"BLUE"</span><span class="p">:</span> <span class="n">img</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">"B2"</span><span class="p">)}</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="spectral-indices">Spectral Indices</h3>
+<p>Built-in indices include intelligent auto-detection of common band aliases (e.g., <code>"B8"</code>, <code>"B8A"</code>, <code>"B08"</code>, <code>"NIR"</code>, <code>"B4"</code>, <code>"B04"</code>, <code>"RED"</code>, <code>"B3"</code>, <code>"B03"</code>, <code>"GREEN"</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Formula</th>
+<th>Band Alias Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.normalizedDifference([b1, b2])</code></td>
+<td>$(b_1 - b_2) / (b_1 + b_2)$</td>
+<td>Required list of 2 band names</td>
+</tr>
+<tr>
+<td><code>.ndvi(nir=None, red=None)</code></td>
+<td>Normalized Difference Vegetation Index</td>
+<td>Auto-detects NIR (<code>B8</code>, <code>B8A</code>, <code>B08</code>, <code>NIR</code>) / Red (<code>B4</code>, <code>B04</code>, <code>RED</code>)</td>
+</tr>
+<tr>
+<td><code>.ndwi(green=None, nir=None)</code></td>
+<td>Normalized Difference Water Index</td>
+<td>Auto-detects Green (<code>B3</code>, <code>B03</code>, <code>GREEN</code>) / NIR (<code>B8</code>, <code>B8A</code>, <code>B08</code>, <code>NIR</code>)</td>
+</tr>
+<tr>
+<td><code>.ndbi(swir=None, nir=None)</code></td>
+<td>Normalized Difference Built-Up Index</td>
+<td>Auto-detects SWIR (<code>B11</code>, <code>SWIR</code>) / NIR (<code>B8</code>, <code>B8A</code>, <code>B08</code>, <code>NIR</code>)</td>
+</tr>
+<tr>
+<td><code>.nbr(nir=None, swir2=None)</code></td>
+<td>Normalized Burn Ratio</td>
+<td>Auto-detects NIR (<code>B8</code>, <code>B8A</code>, <code>B08</code>) / SWIR-2 (<code>B12</code>, <code>SWIR2</code>)</td>
+</tr>
+<tr>
+<td><code>.evi(nir=None, red=None, blue=None)</code></td>
+<td>Enhanced Vegetation Index</td>
+<td>Auto-detects NIR, Red, Blue</td>
+</tr>
+<tr>
+<td><code>.savi(nir=None, red=None, L=0.5)</code></td>
+<td>Soil Adjusted Vegetation Index</td>
+<td>Auto-detects NIR, Red, Canopy factor L</td>
+</tr>
+</tbody>
+</table>
+<h3 id="masking-qa-cloud-filtering-radiometric-scaling">Masking, QA Cloud Filtering &amp; Radiometric Scaling</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.mask_clouds(...)</code></td>
+<td><code>mask_clouds(qa_band=None, method="auto", keep_clear=True) -&gt; Image</code></td>
+<td>Masks clouds, cloud shadows, and cirrus using QA bands (supports HLS Fmask, Sentinel-2 SCL, and Landsat Collection 2 QA_PIXEL).</td>
+</tr>
+<tr>
+<td><code>.auto_scale(...)</code></td>
+<td><code>auto_scale(scale=None, offset=None, dataset=None, exclude_bands=None) -&gt; Image</code></td>
+<td>Applies radiometric scaling factors and offsets (e.g. 0.0001 for HLS/Sentinel-2; 0.0000275 and -0.2 for Landsat C2). QA bands are automatically protected from scaling.</td>
+</tr>
+<tr>
+<td><code>.clip(geometry)</code></td>
+<td><code>clip(geometry: Geometry | Any) -&gt; Image</code></td>
+<td>Clips image using polygon boundary; pixels outside geometry are set to <code>np.nan</code>.</td>
+</tr>
+<tr>
+<td><code>.updateMask(mask)</code></td>
+<td><code>updateMask(mask: Image | np.ndarray) -&gt; Image</code></td>
+<td>Retains pixels where mask is non-zero / True; others set to <code>np.nan</code>.</td>
+</tr>
+<tr>
+<td><code>.unmask(value=0.0)</code></td>
+<td><code>unmask(value: float = 0.0) -&gt; Image</code></td>
+<td>Replaces <code>nan</code> values with a constant number.</td>
+</tr>
+<tr>
+<td><code>.where(condition, value)</code></td>
+<td><code>where(condition, value) -&gt; Image</code></td>
+<td>Replaces pixels with <code>value</code> where <code>condition</code> is True.</td>
+</tr>
+<tr>
+<td><code>.mask()</code></td>
+<td><code>mask() -&gt; Image</code></td>
+<td>Returns single-band binary mask (1.0 for valid pixels, 0.0 for <code>nan</code>).</td>
+</tr>
+<tr>
+<td><code>.normalize(min_val=None, max_val=None)</code></td>
+<td><code>normalize(...) -&gt; Image</code></td>
+<td>Scales values to $[0.0, 1.0]$ using empirical min/max or explicit values.</td>
+</tr>
+<tr>
+<td><code>.clamp(low, high)</code></td>
+<td><code>clamp(low: float, high: float) -&gt; Image</code></td>
+<td>Restricts pixel values to <code>[low, high]</code>.</td>
+</tr>
+<tr>
+<td><code>.reproject(dst_crs, scale=None, resampling="bilinear")</code></td>
+<td><code>reproject(...) -&gt; Image</code></td>
+<td>Reprojects raster to target CRS with optional target pixel resolution scale. Preserves custom subclasses.</td>
+</tr>
+<tr>
+<td><code>.resample(scale_factor=1.0, method="bilinear")</code></td>
+<td><code>resample(...) -&gt; Image</code></td>
+<td>Resizes grid by <code>scale_factor</code> (&gt;1 upsamples, &lt;1 downsamples). Preserves custom subclasses.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="focal-neighborhood-filters">Focal &amp; Neighborhood Filters</h3>
+<p>Calculates spatial convolution filters across circular, gaussian, or square kernels:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.focal_mean(radius=3, kernel="circle")</code></td>
+<td><code>focal_mean(...) -&gt; Image</code></td>
+<td>Neighborhood mean filter (<code>circle</code>, <code>gaussian</code>, <code>square</code>).</td>
+</tr>
+<tr>
+<td><code>.focal_median(radius=3)</code></td>
+<td><code>focal_median(...) -&gt; Image</code></td>
+<td>Neighborhood median filter (removes salt-and-pepper noise).</td>
+</tr>
+<tr>
+<td><code>.focal_min(radius=3)</code></td>
+<td><code>focal_min(...) -&gt; Image</code></td>
+<td>Neighborhood minimum filter (erosion).</td>
+</tr>
+<tr>
+<td><code>.focal_max(radius=3)</code></td>
+<td><code>focal_max(...) -&gt; Image</code></td>
+<td>Neighborhood maximum filter (dilation).</td>
+</tr>
+<tr>
+<td><code>.focal_std(radius=3)</code></td>
+<td><code>focal_std(...) -&gt; Image</code></td>
+<td>Local standard deviation (texture analysis).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="terrain-analysis-dem-operations">Terrain Analysis (DEM Operations)</h3>
+<p>Applicable to single-band Digital Elevation Models:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.slope()</code></td>
+<td><code>Image</code></td>
+<td>Terrain slope in degrees ($0^\circ - 90^\circ$). Pixel sizes of geographic-CRS DEMs are converted from degrees to metres per row latitude.</td>
+</tr>
+<tr>
+<td><code>.aspect()</code></td>
+<td><code>Image</code></td>
+<td>Terrain aspect in degrees ($0^\circ - 360^\circ$ clockwise from North).</td>
+</tr>
+<tr>
+<td><code>.hillshade(azimuth=315.0, elevation=45.0)</code></td>
+<td><code>Image</code></td>
+<td>8-bit shaded relief illumination array ($0 - 255$).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="zonal-reductions-regional-aggregations">Zonal Reductions &amp; Regional Aggregations</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">img</span><span class="o">.</span><span class="n">reduceRegion</span><span class="p">(</span><span class="n">reducer</span><span class="p">:</span> <span class="n">Reducer</span><span class="p">,</span> <span class="n">geometry</span><span class="p">:</span> <span class="n">Geometry</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+</span></code></pre></div>
+<p>Aggregates all pixel values inside <code>geometry</code> (or the full image extent if <code>None</code>) using a <a href="../core/#reducer"><code>Reducer</code></a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">reduceRegion</span><span class="p">(</span><span class="n">gf</span><span class="o">.</span><span class="n">Reducer</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">geometry</span><span class="o">=</span><span class="n">study_aoi</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Returns: {"B2": 450.2, "B3": 512.4, "B4": 490.1, "B8": 2810.5}</span>
+</span></code></pre></div>
+<h3 id="visualization-cartographic-export">Visualization &amp; Cartographic Export</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.visualize(vis_params=None)</code></td>
+<td>Renders an 8-bit RGB array <code>(H, W, 3)</code> suitable for PIL/Leaflet. Supports multi-band <code>{"bands": ["B4", "B3", "B2"], "min": 0, "max": 3000}</code> or single-band colormaps <code>{"bands": ["NDVI"], "palette": "RdYlGn"}</code>.</td>
+</tr>
+<tr>
+<td><code>.plot(bands=None, cmap="viridis", ...)</code></td>
+<td>Quick Matplotlib plot.</td>
+</tr>
+<tr>
+<td><code>.plot_map(**kwargs)</code></td>
+<td>Generates a publication-grade map complete with dynamic scale bar, 3D North arrow, and degree-formatted coordinates.</td>
+</tr>
+<tr>
+<td><code>.edit_layout(**kwargs)</code></td>
+<td>Launches the in-notebook interactive ArcGIS-style Layout Editor.</td>
+</tr>
+<tr>
+<td><code>.save(filepath, driver="GTiff", compress="lzw")</code></td>
+<td>Writes raster to disk as GeoTIFF.</td>
+</tr>
+<tr>
+<td><code>.to_numpy()</code></td>
+<td>Returns copy of internal 3D NumPy array.</td>
+</tr>
+<tr>
+<td><code>.to_xarray(name=None)</code></td>
+<td>Converts to <code>xarray.DataArray</code> with <code>.rio</code> geospatial accessor.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="imagecollection"><code>ImageCollection</code></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">gf</span><span class="o">.</span><span class="n">ImageCollection</span><span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">images</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Image</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"CustomCollection"</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Manages sequences of <code>Image</code> granules across space and time.</p>
+<div class="admonition warning">
+<p class="admonition-title">Loading collections by name</p>
+<p><code>gf.ImageCollection(...)</code> takes a list of <code>Image</code> objects. Passing a dataset name such as <code>gf.ImageCollection("SENTINEL-2")</code> raises a <code>TypeError</code>. To load imagery, use <code>gf.ImageCollection.from_stac(...)</code> (no account needed for Planetary Computer) or <code>gf.ImageCollection.from_earthdata(...)</code> (needs an <a href="../../user_guide/00_earthdata_login/">Earthdata login</a>).</p>
+</div>
+<h3 id="factory-methods-cloud-native-nasa-ingestion">Factory Methods (Cloud-Native &amp; NASA Ingestion)</h3>
+<table>
+<thead>
+<tr>
+<th>Factory</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>from_stac</code></td>
+<td><code>from_stac(collection, catalog="planetary-computer", geometry=None, start=None, end=None, limit=100, bands=None, resolution=None)</code></td>
+<td>Streams analysis-ready data lazily using STAC + <code>odc-stac</code> + Dask without downloading raw granules.</td>
+</tr>
+<tr>
+<td><code>from_earthdata</code></td>
+<td><code>from_earthdata(dataset, region=None, start=None, end=None, limit=10, bands=None, cloud_cover=None, **kwargs)</code></td>
+<td>Searches NASA CMR / earthaccess, downloads granules to local disk, groups single-band files by granule, and returns an initialized collection.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="collection-filtering-transformation">Collection Filtering &amp; Transformation</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Signature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.filterBounds(geometry)</code></td>
+<td><code>filterBounds(geom) -&gt; ImageCollection</code></td>
+<td>Retains images whose spatial extent intersects <code>geometry</code>.</td>
+</tr>
+<tr>
+<td><code>.filterDate(start, end)</code></td>
+<td><code>filterDate(start, end) -&gt; ImageCollection</code></td>
+<td>Retains images whose acquisition date falls within <code>[start, end]</code>.</td>
+</tr>
+<tr>
+<td><code>.filter(filter_obj)</code></td>
+<td><code>filter(filter_obj: Filter) -&gt; ImageCollection</code></td>
+<td>Applies arbitrary declarative <a href="../core/#filter"><code>Filter</code></a>.</td>
+</tr>
+<tr>
+<td><code>.filterMetadata(name, op, val)</code></td>
+<td><code>filterMetadata(...) -&gt; ImageCollection</code></td>
+<td>Filters on metadata attribute (e.g. <code>op="&lt;="</code>, <code>val=20</code>).</td>
+</tr>
+<tr>
+<td><code>.filterQuality()</code></td>
+<td><code>filterQuality() -&gt; ImageCollection</code></td>
+<td>Retains images with cloud cover $\le 30\%$ and good quality flags.</td>
+</tr>
+<tr>
+<td><code>.select(bands)</code></td>
+<td><code>select(bands: str | list[str]) -&gt; ImageCollection</code></td>
+<td>Subsets bands across all images in the collection.</td>
+</tr>
+<tr>
+<td><code>.sort(prop, ascending=True)</code></td>
+<td><code>sort(...) -&gt; ImageCollection</code></td>
+<td>Sorts images by metadata property.</td>
+</tr>
+<tr>
+<td><code>.limit(count)</code></td>
+<td><code>limit(count: int) -&gt; ImageCollection</code></td>
+<td>Truncates collection to first $N$ images.</td>
+</tr>
+<tr>
+<td><code>.map(func)</code></td>
+<td><code>map(func: Callable[[Image], Image]) -&gt; ImageCollection</code></td>
+<td>Applies custom Python function to each image.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="compositing-reductions">Compositing &amp; Reductions</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.mean()</code></td>
+<td>Pixel-wise temporal mean composite.</td>
+</tr>
+<tr>
+<td><code>.median()</code></td>
+<td>Pixel-wise temporal median composite.</td>
+</tr>
+<tr>
+<td><code>.min()</code>, <code>.max()</code></td>
+<td>Pixel-wise temporal minimum or maximum composite.</td>
+</tr>
+<tr>
+<td><code>.sum()</code></td>
+<td>Pixel-wise temporal sum composite.</td>
+</tr>
+<tr>
+<td><code>.mosaic()</code></td>
+<td>Stitches images across space, with later images layered on top.</td>
+</tr>
+<tr>
+<td><code>.qualityMosaic(quality_band)</code></td>
+<td>For each pixel, picks values from the image granule that has the maximum value in <code>quality_band</code> (e.g., greenest-pixel composite using <code>"NDVI"</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4d-datacubes-xarray-export">4D Datacubes &amp; Xarray Export</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Return Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.to_xarray()</code></td>
+<td><code>xarray.DataArray</code></td>
+<td>Stacks all images into a 4D datacube with dimensions <code>('time', 'band', 'y', 'x')</code>.</td>
+</tr>
+<tr>
+<td><code>.to_dataset()</code></td>
+<td><code>xarray.Dataset</code></td>
+<td>Converts collection into an xarray Dataset where each band is an individual variable with dimensions <code>('time', 'y', 'x')</code>.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
