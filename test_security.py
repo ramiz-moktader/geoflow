@@ -104,3 +104,70 @@ def test_credentials_only_sent_to_urs():
     adapter.seen.clear()
     session.get("https://other-host.example.com/doc.html")
     assert adapter.seen == [("other-host.example.com", None)]
+
+
+def test_download_stops_after_first_login_failure(tmp_path, monkeypatch):
+    """A 401 on the first file must not fire off parallel requests for the rest."""
+    import geoflow.earthdata.downloader as dl
+
+    seen = []
+
+    def fake_download_file(url, dest, resume=True, timeout=60, session=None):
+        seen.append(url)
+        raise PermissionError("NASA Earthdata refused access (HTTP 401)")
+
+    monkeypatch.setattr(dl, "_download_file", fake_download_file)
+    urls = [f"https://data.example.invalid/f{i}.h5" for i in range(5)]
+    with pytest.raises(PermissionError, match="401"):
+        dl.download(urls, output_dir=tmp_path)
+    assert seen == urls[:1]
+
+
+def test_download_fetches_first_file_before_the_rest(tmp_path, monkeypatch):
+    import threading
+    import geoflow.earthdata.downloader as dl
+
+    order = []
+    first_done = threading.Event()
+
+    def fake_download_file(url, dest, resume=True, timeout=60, session=None):
+        if url.endswith("f0.h5"):
+            first_done.set()
+        else:
+            assert first_done.is_set(), "parallel download started before the first one finished"
+        order.append(url)
+        dest.write_bytes(b"x")
+        return dest
+
+    monkeypatch.setattr(dl, "_download_file", fake_download_file)
+    urls = [f"https://data.example.invalid/f{i}.h5" for i in range(4)]
+    paths = dl.download(urls, output_dir=tmp_path)
+    assert order[0] == urls[0] and len(paths) == 4
+
+
+def test_login_force_prompts_even_with_saved_credentials(tmp_path, monkeypatch):
+    """force=True must ignore a saved (possibly wrong) password and ask again, then replace it."""
+    import builtins
+    import getpass
+    import pathlib
+    import sys
+    from geoflow.auth import session
+
+    monkeypatch.setattr(pathlib.Path, "home", lambda: tmp_path)
+    netrc = tmp_path / (".netrc" if session.os.name != "nt" else "_netrc")
+    netrc.write_text("machine urs.earthdata.nasa.gov login olduser password typo\n")
+    monkeypatch.delenv("EARTHDATA_USERNAME", raising=False)
+    monkeypatch.delenv("EARTHDATA_PASSWORD", raising=False)
+    monkeypatch.setattr(session, "ensure_earthaccess_login", lambda: False)
+    monkeypatch.setitem(sys.modules, "earthaccess", None)  # behave as if not installed
+    monkeypatch.setattr(builtins, "input", lambda prompt="": "newuser")
+    monkeypatch.setattr(getpass, "getpass", lambda prompt="": "right")
+    session.logout()
+
+    assert session.login() is True                      # saved entry is accepted without prompting
+    assert session.get_credentials() == (None, None)
+    assert session.login(force=True) is True            # force asks again
+    assert session.get_credentials() == ("newuser", "right")
+    assert netrc.read_text().count("urs.earthdata.nasa.gov") == 1
+    assert "newuser" in netrc.read_text() and "typo" not in netrc.read_text()
+    session.logout()

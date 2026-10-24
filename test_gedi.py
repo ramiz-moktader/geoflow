@@ -100,3 +100,58 @@ def test_unreadable_files_raise(tmp_path):
     bad.write_bytes(b"not an hdf5 file")
     with pytest.raises(RuntimeError, match="Could not read any GEDI file"):
         gf.GEDI("L2A", files=[str(bad)]).to_geodataframe()
+
+
+def _fake_search_and_download(monkeypatch, tmp_path, calls):
+    """Replace NASA search/download with fakes that write one synthetic L2A granule."""
+    import sys
+    import geoflow.earthdata  # noqa: F401  (the package re-exports search(), shadowing the module name)
+    search_mod = sys.modules["geoflow.earthdata.search"]
+    dl_mod = sys.modules["geoflow.earthdata.downloader"]
+
+    def fake_search(dataset, region=None, start=None, end=None, limit=10, **kw):
+        calls.append({"dataset": dataset, "region": region, "start": start, "end": end, "limit": limit})
+        return [{"urls": ["https://example.invalid/g.h5"]}]
+
+    def fake_download(results, output_dir="./data"):
+        path = tmp_path / "g.h5"
+        write_l2a(path)
+        return [path]
+
+    monkeypatch.setattr(search_mod, "search_data", fake_search)
+    monkeypatch.setattr(dl_mod, "download", fake_download)
+
+
+def test_load_on_filtered_object_uses_its_filters(monkeypatch, tmp_path):
+    calls = []
+    _fake_search_and_download(monkeypatch, tmp_path, calls)
+    aoi = gf.Rectangle([91.70, 22.20, 91.85, 22.35])
+    gedi = (
+        gf.GEDI("L2B")
+        .filterBounds(aoi)
+        .filterDate("2020-01-01", "2020-01-05")
+        .filterQuality()
+        .select(["rh98"])
+        .load(limit=1)
+    )
+    assert calls == [{"dataset": "GEDI/L2B", "region": aoi, "start": "2020-01-01", "end": "2020-01-05", "limit": 1}]
+    assert gedi.files and gedi._quality_filter_active and gedi._selected_variables == ["rh98"]
+
+
+def test_classmethod_load_still_works(monkeypatch, tmp_path):
+    calls = []
+    _fake_search_and_download(monkeypatch, tmp_path, calls)
+    aoi = gf.Rectangle([91.70, 22.20, 91.85, 22.35])
+    gedi = gf.GEDI.load("L2A", region=aoi, start="2020-01-01", end="2020-01-05", limit=1)
+    assert calls[0]["dataset"] == "GEDI/L2A" and calls[0]["region"] is aoi
+    assert len(gedi.to_geodataframe()) > 0
+
+
+def test_load_without_region_refuses_global_download(monkeypatch, tmp_path):
+    calls = []
+    _fake_search_and_download(monkeypatch, tmp_path, calls)
+    with pytest.raises(ValueError, match="needs a region"):
+        gf.GEDI("L2A").filterQuality().load()
+    with pytest.raises(ValueError, match="needs a region"):
+        gf.GEDI.load("L2A")
+    assert calls == []

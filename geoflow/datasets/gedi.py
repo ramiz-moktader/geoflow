@@ -14,6 +14,19 @@ from geoflow.geometry.base import Geometry
 from geoflow.vector.collection import FeatureCollection
 
 
+class _ClassOrInstanceMethod:
+    """Descriptor: GEDI.load(...) searches with explicit arguments; gedi.load() reuses the object's filters."""
+
+    def __init__(self, func):
+        self.func = func
+        self.__doc__ = func.__doc__
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return lambda *args, **kwargs: self.func(cls, None, *args, **kwargs)
+        return lambda *args, **kwargs: self.func(cls, obj, *args, **kwargs)
+
+
 class GEDI(EarthObject):
     """GEE-like GEDI LiDAR dataset object."""
 
@@ -26,10 +39,11 @@ class GEDI(EarthObject):
         self._quality_filter_active: bool = False
         self._selected_variables: List[str] = ["rh98", "sensitivity", "quality_flag"]
 
-    @classmethod
+    @_ClassOrInstanceMethod
     def load(
         cls,
-        level: str = "L2A",
+        self: Optional[GEDI],
+        level: Optional[str] = None,
         region: Optional[Union[Geometry, Any]] = None,
         start: Optional[str] = None,
         end: Optional[str] = None,
@@ -38,13 +52,32 @@ class GEDI(EarthObject):
         **kwargs: Any,
     ) -> GEDI:
         """
-        Search NASA Earthdata (using earthaccess backend) for GEDI granules,
-        download them to output_dir, and return an initialized GEDI object.
+        Search NASA Earthdata for GEDI granules, download them to output_dir, and return
+        a GEDI object with the files attached.
+
+        Two ways to call it:
+            gf.GEDI.load("L2A", region=aoi, start="2022-01-01", end="2022-03-31", limit=1)
+            gf.GEDI("L2A").filterBounds(aoi).filterDate("2022-01-01", "2022-03-31").filterQuality().load(limit=1)
+        The second form uses the object's level and filters (explicit arguments override them)
+        and keeps its quality filter and selected variables.
+        GEDI granules are large (often more than 1 GB each): start with a small limit.
         """
         from geoflow.earthdata.search import search_data
         from geoflow.earthdata.downloader import download
 
-        dataset_id = f"GEDI/{level.upper()}"
+        if self is not None:
+            level = level or self.level
+            region = region if region is not None else self._bounds_filter
+            if self._date_filter and start is None and end is None:
+                start, end = self._date_filter
+        level = (level or "L2A").upper()
+        if region is None:
+            raise ValueError(
+                "GEDI.load() needs a region: pass region=aoi or call .filterBounds(aoi) first. "
+                "Without one it would download GEDI orbits from anywhere in the world."
+            )
+
+        dataset_id = f"GEDI/{level}"
         results = search_data(
             dataset=dataset_id,
             region=region,
@@ -63,9 +96,13 @@ class GEDI(EarthObject):
                 f"Found {len(results)} {dataset_id} granules but no HDF5 files were downloaded. "
                 "Run `geoflow.login()` and check your NASA Earthdata credentials."
             )
-        gedi_obj = cls(level=level, files=h5_files)
-        if region is not None:
-            gedi_obj = gedi_obj.filterBounds(region)
+        if self is not None:
+            gedi_obj = self._clone()
+            gedi_obj.level = level
+            gedi_obj.files = h5_files
+        else:
+            gedi_obj = cls(level=level, files=h5_files)
+        gedi_obj = gedi_obj.filterBounds(region)
         if start and end:
             gedi_obj = gedi_obj.filterDate(start, end)
         return gedi_obj
@@ -106,7 +143,9 @@ class GEDI(EarthObject):
         """
         if not self.files:
             raise ValueError(
-                "This GEDI object has no data files. Use GEDI.load(...) or pass files=[...]."
+                "This GEDI object has no data files yet. Download them first, e.g.\n"
+                "    gedi = gf.GEDI('L2A').filterBounds(aoi).filterDate(start, end).filterQuality().load(limit=1)\n"
+                "or pass files=[...] with .h5 files you already have. Run gf.login() before downloading."
             )
         import h5py
         import pandas as pd

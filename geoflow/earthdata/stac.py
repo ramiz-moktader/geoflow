@@ -90,6 +90,9 @@ def load_stac_collection(
     """
     Lazily loads a STAC ItemCollection into a GeoFlow ImageCollection using odc-stac and dask.
     Streams data directly from the cloud bucket (S3 / Azure Blob).
+
+    resolution is the pixel size in metres (e.g. 10 or 20 for Sentinel-2), also when the
+    output crs is geographic: it is then converted to degrees.
     """
     try:
         import odc.stac
@@ -107,6 +110,9 @@ def load_stac_collection(
     if bands:
         load_params["bands"] = bands
     if resolution:
+        from pyproj import CRS as _ProjCRS
+        if crs and _ProjCRS.from_user_input(crs).is_geographic:
+            resolution = resolution / 111_320.0  # metres -> degrees of latitude
         load_params["resolution"] = resolution
     if bbox:
         load_params["bbox"] = bbox

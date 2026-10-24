@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import math
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -563,7 +564,16 @@ def plot_carto_map(
         # Vector / FeatureCollection
         gdf = image_or_gdf.gdf if hasattr(image_or_gdf, "gdf") else image_or_gdf
         col = bands[0] if bands and bands[0] in gdf.columns else None
-        gdf.plot(column=col, cmap=cmap, ax=ax, legend=legend, alpha=0.9)
+        legend_kwds = None
+        if legend and col is not None:
+            if pd.api.types.is_numeric_dtype(gdf[col]):
+                # Colour bar sized like the raster one, labelled with colorbar_label or the column name
+                legend_kwds = {"label": colorbar_label or col, "shrink": 0.7,
+                               "pad": 0.07 if show_right else 0.03}
+            elif legend_title:
+                legend_kwds = {"title": legend_title, "loc": legend_loc}
+        gdf.plot(column=col, cmap=cmap, ax=ax, legend=legend, legend_kwds=legend_kwds,
+                 vmin=vmin, vmax=vmax, alpha=0.9)
 
     # Custom Discrete Legend
     if legend_labels:

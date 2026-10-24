@@ -30,6 +30,7 @@ def check_disk_space(target_dir: Path, min_free_mb: int = 500):
 
 
 URS_HOST = "urs.earthdata.nasa.gov"
+LOGIN_GUIDE_URL = "https://ramiz-moktader.github.io/geoflow/user_guide/00_earthdata_login/"
 
 
 def _is_urs(url: str) -> bool:
@@ -91,10 +92,14 @@ def _download_file(
             if temp_path.exists():
                 temp_path.rename(dest_path)
                 return dest_path
-        if r.status_code in (401, 403):
+        login_failed = r.status_code in (401, 403) or (
+            r.status_code >= 500 and requests.utils.urlparse(r.url).hostname == URS_HOST
+        )
+        if login_failed:
             raise PermissionError(
-                f"NASA Earthdata refused access to {url} (HTTP {r.status_code}). "
-                "Run geoflow.login() and make sure the dataset's DAAC application is authorized in your Earthdata profile."
+                f"NASA Earthdata refused access to {url} (HTTP {r.status_code}). Run gf.login() with your "
+                "Earthdata username and password, and authorize the data center's application in your "
+                f"Earthdata profile. Step-by-step guide: {LOGIN_GUIDE_URL}"
             )
         r.raise_for_status()
         if "text/html" in r.headers.get("Content-Type", ""):
@@ -177,19 +182,45 @@ def download(
 
     downloaded_paths: List[Path] = []
     errors: List[str] = []
-    tasks = {}
+    pending = []
+    for url in urls:
+        target_file = out_path / url.split("/")[-1].split("?")[0]
+        if cache and target_file.exists() and target_file.stat().st_size > 0:
+            downloaded_paths.append(target_file)
+        else:
+            pending.append((url, target_file))
+
+    # A login held by earthaccess (gf.login() with earthaccess installed) is not visible to our
+    # requests session, so let earthaccess fetch the URLs with its own authenticated session.
+    from geoflow.auth.session import _earthaccess_logged_in, get_credentials
+    if pending and _earthaccess_logged_in() and get_credentials() == (None, None):
+        import earthaccess
+        res = earthaccess.download([u for u, _ in pending], local_path=str(out_path))
+        paths = [Path(p) for p in (res or []) if p]
+        if not paths:
+            raise RuntimeError(
+                f"earthaccess downloaded 0 of {len(pending)} files. "
+                "Check your Earthdata login and that the DAAC application is authorized in your profile."
+            )
+        return downloaded_paths + paths
+
     session = _make_session()
 
+    # Download the first file on its own: it runs the Earthdata login redirect once and stores the
+    # DAAC session cookie, so the parallel downloads after it don't all hit the login server at once.
+    if pending:
+        url, target = pending[0]
+        try:
+            downloaded_paths.append(_download_file(url, target, resume, 60, session))
+        except Exception as e:
+            errors.append(f"{url}: {e}")
+            if isinstance(e, PermissionError):
+                raise PermissionError(str(e)) from None  # same credentials would fail for every file
+
+    tasks = {}
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        for url in urls:
-            filename = url.split("/")[-1].split("?")[0]
-            target_file = out_path / filename
-
-            if cache and target_file.exists() and target_file.stat().st_size > 0:
-                downloaded_paths.append(target_file)
-                continue
-
-            tasks[executor.submit(_download_file, url, target_file, resume, 60, session)] = url
+        for url, target in pending[1:]:
+            tasks[executor.submit(_download_file, url, target, resume, 60, session)] = url
 
         for future in as_completed(tasks):
             try:

@@ -63,10 +63,12 @@ def ensure_earthaccess_login() -> bool:
     return False
 
 
-def login(strategy: str = "interactive", persist: bool = True) -> bool:
+def login(strategy: str = "interactive", persist: bool = True, force: bool = False) -> bool:
     """
     Authenticate with NASA Earthdata.
     Uses earthaccess if available, otherwise falls back to environment variables, .netrc, or interactive prompt.
+    force=True ignores stored credentials and asks for username and password again
+    (e.g. after a password change or a typo saved to ~/.netrc).
     """
     global _SESSION, _CREDENTIALS
     try:
@@ -75,11 +77,14 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
     except ImportError:
         has_earthaccess = False
 
-    if is_authenticated() and (not has_earthaccess or _earthaccess_logged_in()):
+    if force:
+        logout()
+        strategy = "interactive"
+    elif is_authenticated() and (not has_earthaccess or _earthaccess_logged_in()):
         return True
 
     # 1. earthaccess backend: try stored credentials first, then the requested strategy
-    if has_earthaccess:
+    if has_earthaccess and not force:
         if ensure_earthaccess_login():
             return True
         try:
@@ -95,14 +100,14 @@ def login(strategy: str = "interactive", persist: bool = True) -> bool:
     # 2. Check environment variables
     user = os.environ.get("EARTHDATA_USERNAME")
     pw = os.environ.get("EARTHDATA_PASSWORD")
-    if user and pw:
+    if user and pw and not force:
         _SESSION = {"username": user, "authenticated": True}
         return True
 
     # 3. Check existing ~/.netrc
     from pathlib import Path
     netrc_path = Path.home() / (".netrc" if os.name != "nt" else "_netrc")
-    if netrc_path.exists():
+    if netrc_path.exists() and not force:
         try:
             content = netrc_path.read_text()
             if "urs.earthdata.nasa.gov" in content:

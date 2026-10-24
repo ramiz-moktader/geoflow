@@ -341,6 +341,7 @@ class ImageCollection(EarthObject):
     ) -> ImageCollection:
         """
         Lazily load an ImageCollection from a STAC catalog (Cloud-Native Streaming).
+        resolution is the output pixel size in metres (e.g. 10 or 20 for Sentinel-2).
         """
         from geoflow.earthdata.stac import search_stac, load_stac_collection
         
