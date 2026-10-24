@@ -125,22 +125,12 @@ def search_collections(
 ) -> List[Dict[str, Any]]:
     """
     Search NASA CMR collections / datasets by title, short name, or science keyword.
+
+    Always uses the public CMR REST API (no login needed), so the result is the same
+    list of dicts (id, title, short_name, version_id, summary, time_start, time_end, raw)
+    whether or not earthaccess is installed.
     """
     search_term = query or keyword or ""
-    # Try earthaccess first
-    try:
-        import earthaccess
-        params = {"count": limit}
-        if search_term:
-            params["keyword"] = search_term
-        params.update(kwargs)
-        return earthaccess.search_datasets(**params)
-    except ImportError:
-        pass  # earthaccess not installed: use the CMR REST API directly
-    except Exception as e:
-        warnings.warn(f"earthaccess collection search failed ({e}); falling back to the CMR API.")
-
-    # Direct NASA CMR Collections search API
     url = "https://cmr.earthdata.nasa.gov/search/collections.json"
     params = {
         "page_size": min(limit, 200),
