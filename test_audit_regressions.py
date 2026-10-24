@@ -259,7 +259,5 @@ def test_rank_biserial_sign_matches_cohens_d():
 
 
 def test_version_matches_package_metadata():
-    import tomllib
-    from pathlib import Path
-    pyproject = tomllib.loads((Path(__file__).parent / "pyproject.toml").read_text())
-    assert pyproject["tool"]["setuptools"]["dynamic"]["version"]["attr"] == "geoflow.__version__"
+    from importlib.metadata import version
+    assert version("geoflow") == gf.__version__
